@@ -63,12 +63,21 @@ button:disabled{opacity:.55; cursor:default;}
 html[data-theme="dark"] .pill.warn{background:#451a03; color:#fbbf24;}
 .pill.bad{background:var(--danger-soft); color:var(--danger);}
 #sync-pill{font-size:.75rem;}
-nav.tabs{background:var(--card); border-bottom:1px solid var(--border);
-  display:flex; overflow-x:auto; box-shadow:var(--shadow);}
-nav.tabs button{flex:1; min-width:70px; background:none; color:var(--muted); border-radius:0;
-  padding:.65rem .4rem; font-size:.72rem; font-weight:700; border-bottom:3px solid transparent;
-  white-space:nowrap;}
-nav.tabs button.active{color:var(--accent); border-bottom-color:var(--accent);}
+.menubar{display:flex; align-items:center; justify-content:space-between;
+  background:var(--card); border-bottom:1px solid var(--border);
+  padding:.45rem .9rem; box-shadow:var(--shadow);}
+#current-tab-name{font-weight:700; font-size:.95rem;}
+#btn-menu{background:none; border:0; color:var(--text); font-size:1.5rem; line-height:1;
+  padding:.15rem .6rem; cursor:pointer; border-radius:8px;}
+#btn-menu:active{background:var(--bar-bg);}
+nav.tabs{display:none; position:absolute; top:100%; right:.6rem; min-width:230px;
+  background:var(--card); border:1px solid var(--border); border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.18); padding:.35rem; z-index:40;
+  flex-direction:column; overflow:hidden;}
+nav.tabs.open{display:flex;}
+nav.tabs button{background:none; color:var(--text); border:0; border-radius:8px;
+  padding:.7rem .8rem; font-size:.9rem; font-weight:600; text-align:left; width:100%; cursor:pointer;}
+nav.tabs button.active{color:var(--accent); background:var(--accent-soft);}
 #error-box{display:none; background:var(--danger-soft); color:var(--danger);
   border:1px solid var(--danger); border-radius:10px; padding:.6rem .8rem; margin-bottom:.8rem; font-size:.88rem;}
 #toast{position:fixed; left:50%; transform:translateX(-50%); bottom:1.2rem; z-index:50;
@@ -102,7 +111,7 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
   .grid2{grid-template-columns:1fr;}
   table.data{display:block; max-width:100%; overflow-x:auto;}
   table.data th,table.data td{white-space:nowrap;}
-  nav.tabs button{font-size:.7rem; padding:.7rem .45rem;}
+  nav.tabs{min-width:200px; right:.4rem;}
   input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],select{font-size:16px;}
   header.topbar{flex-wrap:wrap;}
   .card{padding:.8rem;}
@@ -156,6 +165,10 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
   <!-- ============ MAIN APP ============ -->
   <div id="screen-main" hidden>
     <div class="sticky-nav">
+    <div class="menubar">
+      <span id="current-tab-name">Dashboard</span>
+      <button id="btn-menu" type="button" aria-label="Menu">⋮</button>
+    </div>
     <nav class="tabs" id="main-tabs">
       <button type="button" data-tab="tab-dashboard" class="active" data-i18n="dashboard">Dashboard</button>
       <button type="button" data-tab="tab-working" data-i18n="working">Working Days</button>
@@ -514,6 +527,10 @@ function applyI18n() {
     document.documentElement.setAttribute("lang", lang === "ur" ? "ur" : "en");
     const lb = document.getElementById("btn-lang");
     if (lb) lb.textContent = lang === "ur" ? "EN" : "اردو";
+    const cn = document.getElementById("current-tab-name");
+    if (cn && typeof TAB_I18N !== "undefined" && typeof currentTab !== "undefined") {
+      cn.textContent = t(TAB_I18N[currentTab] || "dashboard");
+    }
   } catch (e) {}
 }
 function setLang(l) {
@@ -750,13 +767,22 @@ function showScreen(name) {
   $("screen-main").hidden = name !== "main";
   clearError();
 }
+const TAB_I18N = {
+  "tab-dashboard": "dashboard", "tab-working": "working", "tab-incentive": "incentive",
+  "tab-history": "history", "tab-upload": "upload", "tab-coach": "coach", "tab-manager": "team"
+};
+let currentTab = "tab-dashboard";
 function switchTab(tabId) {
+  currentTab = tabId;
   ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-coach", "tab-manager"].forEach((id) => {
     $(id).hidden = id !== tabId;
   });
   document.querySelectorAll("#main-tabs button").forEach((b) => {
     b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
   });
+  $("main-tabs").classList.remove("open");
+  const cn = $("current-tab-name");
+  if (cn) cn.textContent = t(TAB_I18N[tabId] || "dashboard");
   if (tabId === "tab-working") renderWorking();
   if (tabId === "tab-incentive") { renderProjection(); renderIncentive(); renderReceipt(); renderGraph(); }
   if (tabId === "tab-history") renderHistory();
@@ -2105,7 +2131,17 @@ function wireUI() {
     applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
   });
   document.querySelectorAll("#main-tabs button").forEach((b) => {
-    b.addEventListener("click", () => switchTab(b.getAttribute("data-tab")));
+    b.addEventListener("click", () => { $("main-tabs").classList.remove("open"); switchTab(b.getAttribute("data-tab")); });
+  });
+  $("btn-menu").addEventListener("click", (e) => {
+    e.stopPropagation();
+    $("main-tabs").classList.toggle("open");
+  });
+  document.addEventListener("click", (e) => {
+    const nav = $("main-tabs");
+    if (nav.classList.contains("open") && !nav.contains(e.target) && !e.target.closest("#btn-menu")) {
+      nav.classList.remove("open");
+    }
   });
   $("btn-add-entry").addEventListener("click", addEntry);
   $("btn-add-product").addEventListener("click", addProduct);
