@@ -111,10 +111,11 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
 </head>
 <body>
 <header class="topbar">
-  <h1>Sales Tracker</h1>
+  <h1 data-i18n="appName">Sales Tracker</h1>
   <span id="sync-pill" class="pill ok">Synced</span>
-  <button id="btn-theme" class="ghost small" type="button" title="Toggle light/dark theme">Theme</button>
-  <button id="btn-logout" class="ghost small" type="button" hidden>Logout</button>
+  <button id="btn-lang" class="ghost small" type="button" title="Language / زبان">اردو</button>
+  <button id="btn-theme" class="ghost small" type="button" title="Toggle light/dark theme" data-i18n="theme">Theme</button>
+  <button id="btn-logout" class="ghost small" type="button" hidden data-i18n="logout">Logout</button>
 </header>
 
 <div class="wrap">
@@ -156,45 +157,54 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
   <div id="screen-main" hidden>
     <div class="sticky-nav">
     <nav class="tabs" id="main-tabs">
-      <button type="button" data-tab="tab-dashboard" class="active">Dashboard</button>
-      <button type="button" data-tab="tab-working">Working Days</button>
-      <button type="button" data-tab="tab-incentive">Incentive</button>
-      <button type="button" data-tab="tab-history">History</button>
-      <button type="button" data-tab="tab-upload">Upload</button>
-      <button type="button" data-tab="tab-manager" id="tabbtn-manager" hidden>Team</button>
+      <button type="button" data-tab="tab-dashboard" class="active" data-i18n="dashboard">Dashboard</button>
+      <button type="button" data-tab="tab-working" data-i18n="working">Working Days</button>
+      <button type="button" data-tab="tab-incentive" data-i18n="incentive">Incentive</button>
+      <button type="button" data-tab="tab-history" data-i18n="history">History</button>
+      <button type="button" data-tab="tab-upload" data-i18n="upload">Upload</button>
+      <button type="button" data-tab="tab-coach" data-i18n="coach">Coach</button>
+      <button type="button" data-tab="tab-manager" id="tabbtn-manager" hidden data-i18n="team">Team</button>
     </nav>
     </div>
 
     <section id="tab-dashboard">
       <div class="card">
-        <h2>Add Sale / Return</h2>
+        <h2 data-i18n="addSaleReturn">Add Sale / Return</h2>
         <div class="grid2">
           <div>
-            <label class="f" for="sale-product">Product</label>
+            <label class="f" for="sale-product" data-i18n="product">Product</label>
             <select id="sale-product"></select>
           </div>
           <div>
-            <label class="f" for="sale-type">Type</label>
+            <label class="f" for="sale-type" data-i18n="type">Type</label>
             <select id="sale-type">
-              <option value="sale">Sale</option>
-              <option value="return">Return</option>
+              <option value="sale" data-i18n="sale">Sale</option>
+              <option value="return" data-i18n="ret">Return</option>
             </select>
           </div>
         </div>
-        <label class="f" for="sale-qty">Quantity (packs)</label>
+        <label class="f" for="sale-qty" data-i18n="qty">Quantity (packs)</label>
         <input id="sale-qty" type="number" min="1" step="1" value="1">
         <div class="row" style="margin-top:.7rem">
-          <button id="btn-add-entry" type="button" style="flex:1">Add</button>
+          <button id="btn-add-entry" type="button" style="flex:1" data-i18n="add">Add</button>
         </div>
       </div>
 
       <div class="card">
-        <h2>Sales Log</h2>
-        <div id="sales-log-list"><span class="muted">No entries yet.</span></div>
+        <h2 data-i18n="dailyReport">Daily Report</h2>
+        <p class="muted" data-i18n="dailyReportHint">Aaj ki sale ka khulasa — WhatsApp par bhejo.</p>
+        <div class="row" style="margin-top:.4rem">
+          <button id="btn-whatsapp-report" type="button" style="flex:1" data-i18n="sendWhatsApp">Send on WhatsApp</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="salesLog">Sales Log</h2>
+        <div id="sales-log-list"><span class="muted" data-i18n="noData">No data yet.</span></div>
       </div>
 
       <div class="card" id="overall-card">
-        <h2>Overall</h2>
+        <h2 data-i18n="overall">Overall</h2>
         <div id="overall-body"></div>
       </div>
 
@@ -255,11 +265,16 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
 
     <section id="tab-incentive" hidden>
       <div class="card">
-        <h2>Month-End Projection</h2>
+        <h2 data-i18n="monthProjection">Month-End Projection</h2>
         <div id="projection-body"></div>
       </div>
       <div class="card">
-        <h2>Incentive</h2>
+        <h2 data-i18n="monthlyGraph">Monthly Graph</h2>
+        <div id="graph-body"></div>
+        <canvas id="trend-canvas" style="width:100%; height:180px; margin-top:.6rem;"></canvas>
+      </div>
+      <div class="card">
+        <h2 data-i18n="incentiveTitle">Incentive</h2>
         <div id="incentive-body"></div>
       </div>
       <div class="card">
@@ -338,6 +353,21 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
       </div>
     </section>
 
+    <section id="tab-coach" hidden>
+      <div class="card">
+        <h2 data-i18n="coachTips">Today's Advice</h2>
+        <div id="coach-body"></div>
+      </div>
+      <div class="card">
+        <h2 data-i18n="askTitle">Ask a Question</h2>
+        <div class="row">
+          <input id="ask-input" type="text" style="flex:1" data-i18n-ph="askPh" placeholder="e.g. mera incentive kitna hai?">
+          <button id="btn-ask" type="button" data-i18n="askBtn">Ask</button>
+        </div>
+        <div id="ask-answer" class="muted" style="margin-top:.6rem; white-space:pre-wrap;"></div>
+      </div>
+    </section>
+
     <section id="tab-manager" hidden>
       <div class="card">
         <h2>Team Overview</h2>
@@ -386,6 +416,118 @@ const DEFAULT_PRODUCTS = [
   { name: "Kestine Liquid 60ml",price: 197.20, rates: "kestineLiq" },
   { name: "Kestine Tablets 10", price: 252.71, rates: "kestineTab10" }
 ];
+
+/* ---- i18n: English + Urdu ---- */
+const STR = {
+en: {
+  appName: "Sales Tracker", dashboard: "Dashboard", working: "Working Days", incentive: "Incentive",
+  history: "History", upload: "Upload", team: "Team", coach: "Coach", theme: "Theme", logout: "Logout",
+  login: "Login", signup: "Sign up", email: "Email", password: "Password", forgot: "Forgot password?",
+  addSaleReturn: "Add Sale / Return", product: "Product", type: "Type", sale: "Sale", ret: "Return",
+  qty: "Quantity", date: "Date", add: "Add", target: "Target", price: "Price", tillSale: "Till sale",
+  tillReturn: "Till return", today: "Today", apply: "Apply", applyTargets: "Apply Targets",
+  monthProjection: "Month-End Projection", dailyReport: "Daily Report", sendWhatsApp: "Send on WhatsApp",
+  dailyReportHint: "Aaj ki sale ka khulasa — WhatsApp par bhejo.",
+  monthlyGraph: "Monthly Graph", achieved: "Achieved", workingTitle: "Working Days",  incentiveTitle: "Incentive Calculator", totalIncentive: "Total incentive", historyTitle: "Monthly History",
+  uploadSales: "Upload Sales Screenshot", uploadTargets: "Upload Target Screenshot",
+  diagnostics: "Save Diagnostics", runTest: "Run test", coachTips: "Today's Advice",
+  askTitle: "Ask a Question", askPh: "e.g. mera incentive kitna hai?", askBtn: "Ask",
+  workingSummary: "Working days summary", clearSales: "Clear sales", remove: "Remove",
+  salesLog: "Sales log", overall: "Overall", products: "Products", holidays: "Holidays",
+  addHoliday: "Add holiday", save: "Save", clear: "Clear", total: "Total", net: "Net",
+  projectionNote: "Set targets to see the projection.", noTargets: "No targets set yet.",
+  entryDeleted: "Entry deleted.", productAdded: "Product added: ", salesClearedFor: "Sales cleared for ",
+  removed: "Removed ", appliedFor: "Applied for ", targetsUpdatedFor: "Targets updated for ",
+  productsSuffix: " products.", holidayAdded: "Holiday added: ", savedTodayOnly: "Saved for today only.",
+  overrideCleared: "Override cleared — back to automatic.", yourNumbers: "(your numbers, today only)",
+  autoNote: "These numbers change automatically every day. If you type your own, they apply for today only.",
+  totalDays: "Total working days", daysLeft: "Days left", daysPassed: "Days passed",
+  projected: "Projected", pace: "Pace/day", needMore: "more needed", perDay: "/day",
+  extra: "extra", nextSlab: "Next slab", noData: "No data yet.", confirmClear: "Clear all sales for this product?",
+  confirmRemove: "Remove this product?", shareText: "Share", downloadExcel: "Download Excel",
+  saveMonth: "Save month", month: "Month", year: "Year", loadTeam: "Load Team",
+  screenshot: "Screenshot", screenshots: "Screenshots", reportDate: "Report date",
+  uploadHintSales: "Upload the report image, check the numbers, then Apply.",
+  uploadHintTargets: "Upload the target image(s), check the numbers, then Apply.",
+  foundProducts: "Found ", ofProducts: " of ", productsEnd: " products. Check the numbers, then tap Apply.",
+  foundTargets: "Found ", ofTargets: " of ", targetsEnd: " targets. Check the numbers, then tap Apply.",
+  noRows: "No OCR rows to apply.", noMatch: "No matching products found",
+  cloudFail: "Cloud save failed: ", synced: "Synced", saving: "Saving…",
+  savedDevice: "Saved on this device", cloudSaveFailed: "Cloud save failed",
+  diagHint: 'Agar data save nahi ho raha to "Run test" dabao — ye check karega ke masla kahan hai. Jo result aaye wo bhej do.',
+  newProduct: "New product name", rateGroup: "Rate group", addProduct: "Add product",
+  receipt: "Receipt", print: "Print", totalSale: "Total sale", totalReturn: "Total return",
+  slab: "Slab", rate: "Rate", incentiveCol: "Incentive", achievedCol: "Achieved",
+  advice: "Advice", overallProgress: "Overall progress", toReach: "to reach",
+  qHelp: "Samajh nahi aaya. Ye puch sakte ho: mera incentive kitna hai? | aaj ki sale? | target? | projection? | working days?"
+},
+ur: {
+  appName: "سیلز ٹریکر", dashboard: "ڈیش بورڈ", working: "کام کے دن", incentive: "انسینٹیو",
+  history: "ہسٹری", upload: "اپ لوڈ", team: "ٹیم", coach: "مشورہ", theme: "تھیم", logout: "لاگ آؤٹ",
+  login: "لاگ اِن", signup: "اکاؤنٹ بنائیں", email: "ای میل", password: "پاس ورڈ", forgot: "پاس ورڈ بھول گئے؟",
+  addSaleReturn: "فروخت / واپسی شامل کریں", product: "پروڈکٹ", type: "قسم", sale: "فروخت", ret: "واپسی",
+  qty: "مقدار", date: "تاریخ", add: "شامل کریں", target: "ٹارگٹ", price: "قیمت", tillSale: "اب تک فروخت",
+  tillReturn: "اب تک واپسی", today: "آج", apply: "اپلائی", applyTargets: "ٹارگٹ اپلائی کریں",
+  monthProjection: "ماہ کے آخر کا تخمینہ", dailyReport: "روزانہ رپورٹ", sendWhatsApp: "واٹس ایپ پر بھیجو",
+  dailyReportHint: "آج کی فروخت کا خلاصہ — واٹس ایپ پر بھیجو۔",
+  monthlyGraph: "ماہانہ گراف", achieved: "حاصل شدہ", workingTitle: "کام کے دن",
+  incentiveTitle: "انسینٹیو کیلکولیٹر", totalIncentive: "کل انسینٹیو", historyTitle: "ماہانہ ہسٹری",
+  uploadSales: "فروخت کا اسکرین شاٹ اپ لوڈ کریں", uploadTargets: "ٹارگٹ کا اسکرین شاٹ اپ لوڈ کریں",
+  diagnostics: "سیو چیک", runTest: "ٹیسٹ چلائیں", coachTips: "آج کا مشورہ",
+  askTitle: "سوال پوچھیں", askPh: "مثلاً: میرا انسینٹیو کتنا ہے؟", askBtn: "پوچھیں",
+  workingSummary: "کام کے دنوں کا خلاصہ", clearSales: "فروخت صاف کریں", remove: "ہٹائیں",
+  salesLog: "فروخت کا ریکارڈ", overall: "مجموعی", products: "پروڈکٹس", holidays: "چھٹیاں",
+  addHoliday: "چھٹی شامل کریں", save: "محفوظ کریں", clear: "صاف کریں", total: "کل", net: "خالص",
+  projectionNote: "تخمینہ دیکھنے کے لیے ٹارگٹ لگائیں۔", noTargets: "ابھی کوئی ٹارگٹ نہیں لگایا۔",
+  entryDeleted: "اندراج حذف ہو گیا۔", productAdded: "پروڈکٹ شامل ہو گیا: ", salesClearedFor: "فروخت صاف کر دی: ",
+  removed: "ہٹا دیا ", appliedFor: "لاگو ہو گیا: ", targetsUpdatedFor: "ٹارگٹ اپ ڈیٹ ہو گئے: ",
+  productsSuffix: " پروڈکٹس۔", holidayAdded: "چھٹی شامل ہو گئی: ", savedTodayOnly: "صرف آج کے لیے محفوظ۔",
+  overrideCleared: "صاف کر دیا — خودکار پر واپس۔", yourNumbers: "(تمہارے نمبر، صرف آج)",
+  autoNote: "یہ نمبر روز خود بدلتے ہیں۔ اپنے لکھو گے تو صرف آج کے لیے ہوں گے۔",
+  totalDays: "کل کام کے دن", daysLeft: "باقی دن", daysPassed: "گزرے دن",
+  projected: "متوقع", pace: "روز کی رفتار", needMore: "مزید درکار", perDay: "روزانہ",
+  extra: "اضافی", nextSlab: "اگلا سلیب", noData: "ابھی کوئی ڈیٹا نہیں۔", confirmClear: "اس پروڈکٹ کی ساری فروخت صاف کر دوں؟",
+  confirmRemove: "یہ پروڈکٹ ہٹا دوں؟", shareText: "شیئر", downloadExcel: "ایکسل ڈاؤن لوڈ",
+  saveMonth: "مہینہ محفوظ کریں", month: "مہینہ", year: "سال", loadTeam: "ٹیم لوڈ کریں",
+  screenshot: "اسکرین شاٹ", screenshots: "اسکرین شاٹس", reportDate: "رپورٹ کی تاریخ",
+  uploadHintSales: "رپورٹ کی تصویر اپ لوڈ کرو، نمبر چیک کرو، پھر اپلائی دباؤ۔",
+  uploadHintTargets: "ٹارگٹ کی تصویریں اپ لوڈ کرو، نمبر چیک کرو، پھر اپلائی دباؤ۔",
+  foundProducts: "ملے ", ofProducts: " میں سے ", productsEnd: " پروڈکٹس۔ نمبر چیک کرو، پھر اپلائی دباؤ۔",
+  foundTargets: "ملے ", ofTargets: " میں سے ", targetsEnd: " ٹارگٹس۔ نمبر چیک کرو، پھر اپلائی دباؤ۔",
+  noRows: "اپلائی کے لیے کوئی قطار نہیں۔", noMatch: "کوئی پروڈکٹ نہیں ملا",
+  cloudFail: "کلاؤڈ سیو ناکام: ", synced: "سنک ہو گیا", saving: "محفوظ ہو رہا ہے…",
+  savedDevice: "اس ڈیوائس پر محفوظ", cloudSaveFailed: "کلاؤڈ سیو ناکام",
+  diagHint: 'اگر ڈیٹا سیو نہیں ہو رہا تو "ٹیسٹ چلائیں" دباؤ — یہ چیک کرے گا مسئلہ کہاں ہے۔ جو نتیجہ آئے وہ بھیج دو۔',
+  newProduct: "نئے پروڈکٹ کا نام", rateGroup: "ریٹ گروپ", addProduct: "پروڈکٹ شامل کریں",
+  receipt: "رسید", print: "پرنٹ", totalSale: "کل فروخت", totalReturn: "کل واپسی",
+  slab: "سلیب", rate: "ریٹ", incentiveCol: "انسینٹیو", achievedCol: "حاصل شدہ",
+  advice: "مشورہ", overallProgress: "مجموعی پیش رفت", toReach: "حاصل کرنے کے لیے",
+  qHelp: "سمجھ نہیں آیا۔ یہ پوچھ سکتے ہو: میرا انسینٹیو کتنا ہے؟ | آج کی سیل؟ | ٹارگٹ؟ | تخمینہ؟ | کام کے دن؟"
+}
+};
+let lang = "en";
+function t(k) { const d = STR[lang] || STR.en; return (d[k] !== undefined ? d[k] : (STR.en[k] !== undefined ? STR.en[k] : k)); }
+function applyI18n() {
+  try {
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.getAttribute("data-i18n")); });
+    document.querySelectorAll("[data-i18n-ph]").forEach((el) => { el.placeholder = t(el.getAttribute("data-i18n-ph")); });
+    document.documentElement.setAttribute("lang", lang === "ur" ? "ur" : "en");
+    const lb = document.getElementById("btn-lang");
+    if (lb) lb.textContent = lang === "ur" ? "EN" : "اردو";
+  } catch (e) {}
+}
+function setLang(l) {
+  lang = (l === "ur") ? "ur" : "en";
+  try { localStorage.setItem("st_lang", lang); } catch (e) {}
+  applyI18n();
+  try { renderAll(); } catch (e) {}
+}
+function initLang() {
+  try {
+    const s = localStorage.getItem("st_lang");
+    if (s === "ur" || s === "en") lang = s;
+  } catch (e) {}
+}
 
 /* ---- Global state ---- */
 const state = {
@@ -546,15 +688,15 @@ function loadLocal() {
 }
 function updateSyncPill() {
   const pill = $("sync-pill");
-  if (!state.user) { pill.textContent = "Synced"; pill.className = "pill ok"; return; }
+  if (!state.user) { pill.textContent = t("synced"); pill.className = "pill ok"; return; }
   if (state.syncing) {
-    pill.textContent = "Saving…"; pill.className = "pill warn"; pill.title = "";
+    pill.textContent = t("saving"); pill.className = "pill warn"; pill.title = "";
   } else if (state.syncError) {
-    pill.textContent = "Cloud save failed"; pill.className = "pill bad"; pill.title = state.syncError;
+    pill.textContent = t("cloudSaveFailed"); pill.className = "pill bad"; pill.title = state.syncError;
   } else if (!navigator.onLine || state.dirty) {
-    pill.textContent = "Saved on this device"; pill.className = "pill warn"; pill.title = "";
+    pill.textContent = t("savedDevice"); pill.className = "pill warn"; pill.title = "";
   } else {
-    pill.textContent = "Synced"; pill.className = "pill ok"; pill.title = "";
+    pill.textContent = t("synced"); pill.className = "pill ok"; pill.title = "";
   }
 }
 function markDirty() {
@@ -609,17 +751,18 @@ function showScreen(name) {
   clearError();
 }
 function switchTab(tabId) {
-  ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-manager"].forEach((id) => {
+  ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-coach", "tab-manager"].forEach((id) => {
     $(id).hidden = id !== tabId;
   });
   document.querySelectorAll("#main-tabs button").forEach((b) => {
     b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
   });
   if (tabId === "tab-working") renderWorking();
-  if (tabId === "tab-incentive") { renderProjection(); renderIncentive(); renderReceipt(); }
+  if (tabId === "tab-incentive") { renderProjection(); renderIncentive(); renderReceipt(); renderGraph(); }
   if (tabId === "tab-history") renderHistory();
   if (tabId === "tab-dashboard") renderDashboard();
   if (tabId === "tab-upload") refreshReportDate();
+  if (tabId === "tab-coach") renderCoach();
 }
 
 /* ---- Auth ---- */
@@ -1078,7 +1221,7 @@ function addProduct() {
   $("newprod-name").value = ""; $("newprod-target").value = 0; $("newprod-price").value = 0;
   markDirty(); renderDashboard(); toast("Product added: " + name);
 }
-function renderAll() { renderDashboard(); }
+function renderAll() { applyI18n(); renderDashboard(); renderCoach(); }
 
 /* ---- Working days tab ---- */
 function renderWorking() {
@@ -1731,6 +1874,232 @@ function exportTeamExcel() {
 }
 
 /* ---- UI wiring ---- */
+/* ================= FEATURES: WhatsApp report, Graph, Coach, Q&A ================= */
+
+/* ---- Daily WhatsApp report ---- */
+function buildDailyReport() {
+  const d = todayStr();
+  const wi = workingInfo();
+  const per = {};
+  state.data.products.forEach((p) => { per[p.name] = 0; });
+  (state.data.salesLog || []).forEach((e) => {
+    if (e.date === d && per[e.product] !== undefined) per[e.product] += (Number(e.qty) || 0);
+  });
+  const o = overallStats(wi);
+  const lines = [];
+  lines.push("*Daily Sales Report — " + d + "*");
+  lines.push("Team 4C");
+  lines.push("");
+  Object.keys(per).forEach((name) => {
+    const p = state.data.products.find((x) => x.name === name);
+    const s = productStats(p, wi);
+    const ach = s.target > 0 ? " [" + Math.round(s.achievement) + "%]" : "";
+    lines.push("▪ " + name + ": " + per[name] + ach);
+  });
+  lines.push("");
+  lines.push("Aaj total: " + o.todaySale + " packs");
+  if (o.target > 0) lines.push("Month: " + o.sale + "/" + o.target + " (" + Math.round((o.sale / o.target) * 100) + "%)");
+  lines.push("Working days left: " + wi.left);
+  return lines.join("\n");
+}
+function sendWhatsAppReport() {
+  if (!state.data) return;
+  window.open("https://wa.me/?text=" + encodeURIComponent(buildDailyReport()), "_blank");
+}
+
+/* ---- Monthly graph: per-product bars + daily trend ---- */
+function renderGraph() {
+  if (!state.data) return;
+  const wi = workingInfo();
+  let html = "";
+  state.data.products.forEach((p) => {
+    const s = productStats(p, wi);
+    const pct = s.target > 0 ? Math.min(100, Math.round(s.achievement)) : 0;
+    html += '<div style="margin-bottom:.55rem">' +
+      '<div class="row" style="justify-content:space-between; flex-wrap:nowrap;">' +
+      '<span style="font-size:.82rem">' + escHtml(p.name) + '</span>' +
+      '<span class="muted" style="font-size:.78rem; white-space:nowrap;">' + s.net + "/" + s.target + " (" + pct + "%)</span></div>" +
+      '<div class="bar"><div class="bar-ach" style="width:' + pct + '%"></div></div></div>';
+  });
+  if (!state.data.products.length) html = '<span class="muted">' + escHtml(t("noData")) + "</span>";
+  $("graph-body").innerHTML = html;
+  drawTrend();
+}
+function drawTrend() {
+  const cv = $("trend-canvas");
+  if (!cv || !cv.getContext || !state.data) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth || 300, H = 180;
+  cv.width = W * dpr; cv.height = H * dpr;
+  let ctx = null;
+  try { ctx = cv.getContext("2d"); } catch (e) {}
+  if (!ctx) return;
+  ctx.clearRect(0, 0, W, H);
+  const now = new Date();
+  const ym = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const byDay = {};
+  (state.data.salesLog || []).forEach((e) => {
+    if (e.date && e.date.indexOf(ym) === 0) {
+      const day = Number(e.date.slice(8, 10));
+      byDay[day] = (byDay[day] || 0) + (Number(e.qty) || 0);
+    }
+  });
+  const days = Object.keys(byDay).map(Number).sort((a, b) => a - b);
+  const dark = document.documentElement.getAttribute("data-theme") === "dark";
+  if (!days.length) {
+    ctx.fillStyle = dark ? "#94a3b8" : "#888"; ctx.font = "12px sans-serif";
+    ctx.fillText(t("noData"), 10, 20);
+    return;
+  }
+  const maxV = Math.max(1, ...days.map((d) => byDay[d]));
+  const minV = Math.min(0, ...days.map((d) => byDay[d]));
+  const span = Math.max(1, maxV - minV);
+  ctx.strokeStyle = dark ? "#475569" : "#cbd5e1";
+  ctx.beginPath(); ctx.moveTo(34, 8); ctx.lineTo(34, H - 24); ctx.lineTo(W - 8, H - 24); ctx.stroke();
+  const X = (i) => 34 + (days.length === 1 ? (W - 48) / 2 : (i / (days.length - 1)) * (W - 48));
+  const Y = (v) => (H - 24) - ((v - minV) / span) * (H - 44);
+  ctx.strokeStyle = "#0d9488"; ctx.fillStyle = "#0d9488"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  days.forEach((d, i) => { if (i === 0) ctx.moveTo(X(i), Y(byDay[d])); else ctx.lineTo(X(i), Y(byDay[d])); });
+  ctx.stroke();
+  ctx.font = "9px sans-serif"; ctx.fillStyle = dark ? "#94a3b8" : "#888";
+  days.forEach((d, i) => {
+    ctx.fillRect(X(i) - 2, Y(byDay[d]) - 2, 4, 4);
+    if (days.length <= 15 || i % 2 === 0) ctx.fillText(String(d), X(i) - 3, H - 10);
+  });
+}
+
+/* ---- AI Coach: rule-based tips from live data ---- */
+function fmtTip(x) {
+  return escHtml(x)
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/(^|[\s(>])\*([^*<>]+)\*/g, "$1<i>$2</i>");
+}
+function coachTips() {
+  const tips = [];
+  const ur = lang === "ur";
+  if (!state.data) return tips;
+  const wi = workingInfo();
+  const left = Math.max(0, wi.left);
+  const rows = state.data.products
+    .map((p) => ({ p, s: productStats(p, wi) }))
+    .filter((r) => r.s.target > 0);
+  if (!rows.length) {
+    tips.push(ur ? "💡 ٹارگٹ لگائیں تاکہ میں آپ کو روز مشورہ دے سکوں۔" : "💡 Set targets so I can advise you daily.");
+    return tips;
+  }
+  rows.sort((a, b) => a.s.achievement - b.s.achievement);
+  const worst = rows[0];
+  if (worst.s.remaining > 0 && left > 0) {
+    const perDay = Math.ceil(worst.s.remaining / left);
+    tips.push(ur
+      ? "⚠️ *" + worst.p.name + "* سب سے پیچھے ہے (" + Math.round(worst.s.achievement) + "٪)۔ روزانہ **" + perDay + "** پیک بیچو تو ٹارگٹ پورا ہو جائے گا۔"
+      : "⚠️ *" + worst.p.name + "* is furthest behind (" + Math.round(worst.s.achievement) + "%). Sell **" + perDay + "** packs/day to hit its target.");
+  } else if (worst.s.remaining <= 0) {
+    tips.push(ur ? "🎉 تمام ٹارگٹ پورے! اب اگلا سلیب پکڑنے پر توجہ دو۔" : "🎉 All targets hit! Now push for the next slab.");
+  }
+  let best = null;
+  rows.forEach((r) => {
+    const si = r.s.slab;
+    if (si >= 4 || r.s.remaining <= 0) return;
+    const nsi = si + 1;
+    const edge = SLAB_EDGES[nsi];
+    const units = Math.ceil((r.s.target * edge) / 100 - r.s.net);
+    if (units > 0 && units <= r.s.remaining) {
+      const gain = Math.round(units * (Number(r.p.rates[nsi]) || 0));
+      if (!best || gain > best.gain) best = { r, units, gain, label: SLAB_LABELS[nsi] };
+    }
+  });
+  if (best) {
+    tips.push(ur
+      ? "💰 *" + best.r.p.name + "* کے صرف **" + best.units + "** پیک اور بیچو — اگلا سلیب (" + best.label + ")! تقریباً **Rs " + best.gain.toLocaleString() + "** اضافی انسینٹیو۔"
+      : "💰 Just **" + best.units + "** more packs of *" + best.r.p.name + "* → next slab (" + best.label + ")! About **Rs " + best.gain.toLocaleString() + "** extra incentive.");
+  }
+  const o = overallStats(wi);
+  if (o.target > 0) {
+    const opct = Math.round((o.sale / o.target) * 100);
+    tips.push(ur
+      ? "📊 مجموعی پیش رفت: **" + opct + "٪** (" + o.sale + "/" + o.target + ")۔ " + (left > 0 ? left + " کام کے دن باقی ہیں۔" : "آج آخری دن ہے!")
+      : "📊 Overall progress: **" + opct + "%** (" + o.sale + "/" + o.target + "). " + (left > 0 ? left + " working days left." : "Today is the last day!"));
+  }
+  if (o.incentive > 0) {
+    tips.push(ur
+      ? "🏆 اب تک کا انسینٹیو: **Rs " + Math.round(o.incentive).toLocaleString() + "**۔"
+      : "🏆 Incentive earned so far: **Rs " + Math.round(o.incentive).toLocaleString() + "**.");
+  }
+  return tips.slice(0, 5);
+}
+function renderCoach() {
+  if (!state.data) return;
+  const tips = coachTips();
+  $("coach-body").innerHTML = tips.length
+    ? tips.map((x) => '<div class="today-box">' + fmtTip(x) + "</div>").join("")
+    : '<span class="muted">' + escHtml(t("noData")) + "</span>";
+}
+
+/* ---- Q&A: keyword answers from live data ---- */
+function answerFor(q) {
+  const ur = lang === "ur";
+  const s = " " + String(q).toLowerCase() + " ";
+  const has = (...ws) => ws.some((w) => s.indexOf(w) >= 0);
+  if (!state.data) return t("qHelp");
+  const wi = workingInfo();
+  const o = overallStats(wi);
+  const ranked = (dir) => state.data.products
+    .map((p) => ({ p, s: productStats(p, wi) }))
+    .filter((r) => r.s.target > 0)
+    .sort((a, b) => dir > 0 ? b.s.achievement - a.s.achievement : a.s.achievement - b.s.achievement);
+  if (has("incentive", "انسینٹیو", "bonus", "بونس")) {
+    const parts = state.data.products
+      .map((p) => ({ p, s: productStats(p, wi) }))
+      .filter((r) => r.s.incentive > 0)
+      .sort((a, b) => b.s.incentive - a.s.incentive)
+      .map((r) => "▪ " + r.p.name + ": Rs " + Math.round(r.s.incentive).toLocaleString());
+    return (ur ? "کل انسینٹیو: Rs " : "Total incentive: Rs ") + Math.round(o.incentive).toLocaleString() +
+      (parts.length ? "\n" + parts.join("\n") : "");
+  }
+  if (has("target", "ٹارگٹ")) {
+    const rows = state.data.products.filter((p) => (Number(p.target) || 0) > 0);
+    if (!rows.length) return t("noTargets");
+    return (ur ? "ٹارگٹس:\n" : "Targets:\n") + rows.map((p) => {
+      const st = productStats(p, wi);
+      return "▪ " + p.name + ": " + st.net + "/" + st.target + " (" + Math.round(st.achievement) + "%)";
+    }).join("\n");
+  }
+  if (has("aaj", "آج", "today", "aj ki", "آج کی")) {
+    return (ur ? "آج کی فروخت: " : "Today's sale: ") + o.todaySale + (ur ? " پیک" : " packs");
+  }
+  if (has("projection", "تخمینہ", "month end", "مہینے کے آخر", "predict")) {
+    const left = Math.max(0, wi.left);
+    const pace = wi.elapsed > 0 ? o.sale / wi.elapsed : 0;
+    const proj = Math.round(o.sale + pace * left);
+    const pct = o.target > 0 ? " (" + Math.round((proj / o.target) * 100) + "%)" : "";
+    return (ur ? "متوقع اختتامی فروخت: " : "Projected month-end sale: ") + proj + pct;
+  }
+  if (has("working", "کام کے دن", "days left", "دن باقی", "chutti", "چھٹی", "bache", "بچے")) {
+    return (ur ? "کام کے دن باقی: " : "Working days left: ") + wi.left + " / " + wi.total;
+  }
+  if (has("best", "بہترین", "sab se ach", "سب سے اچھ", "top")) {
+    const r = ranked(1);
+    if (!r.length) return t("qHelp");
+    return (ur ? "سب سے بہترین: " : "Best performer: ") + r[0].p.name + " (" + Math.round(r[0].s.achievement) + "%)";
+  }
+  if (has("peeche", "پیچھے", "behind", "worst", "slow", "kamzor", "کمزور")) {
+    const r = ranked(-1);
+    if (!r.length) return t("qHelp");
+    return (ur ? "سب سے پیچھے: " : "Furthest behind: ") + r[0].p.name + " (" + Math.round(r[0].s.achievement) + "%)";
+  }
+  if (has("sale", "فروخت", "سیل")) {
+    const pct = o.target > 0 ? " (" + Math.round((o.sale / o.target) * 100) + "%)" : "";
+    return (ur ? "اب تک کل فروخت: " : "Total sale so far: ") + o.sale + pct;
+  }
+  return t("qHelp");
+}
+function answerQuestion() {
+  const q = ($("ask-input").value || "").trim();
+  $("ask-answer").textContent = q ? answerFor(q) : t("qHelp");
+}
+
 function wireUI() {
   $("btn-theme").addEventListener("click", () => {
     applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
@@ -1755,6 +2124,10 @@ function wireUI() {
   $("btn-apply-ocr-sales").addEventListener("click", applyOcrSales);
   $("btn-apply-ocr-targets").addEventListener("click", applyOcrTargets);
   $("btn-diag").addEventListener("click", runDiagnostics);
+  $("btn-whatsapp-report").addEventListener("click", sendWhatsAppReport);
+  $("btn-ask").addEventListener("click", answerQuestion);
+  $("ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter") answerQuestion(); });
+  $("btn-lang").addEventListener("click", () => setLang(lang === "ur" ? "en" : "ur"));
   $("btn-load-team").addEventListener("click", loadTeam);
   $("btn-team-excel").addEventListener("click", exportTeamExcel);
 }
@@ -1762,8 +2135,10 @@ function wireUI() {
 /* ---- Init ---- */
 async function init() {
   initTheme();
+  initLang();
   wireAuth();
   wireUI();
+  applyI18n();
   $("ocr-report-date").value = todayStr();
   reportDateManual = false;
   if ("serviceWorker" in navigator && /^https?:/.test(window.location.protocol)) {
