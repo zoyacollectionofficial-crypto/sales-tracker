@@ -1342,27 +1342,27 @@ function isBrandTotalRow(nameTokens) {
 }
 
 /* ---- OCR: sales report parsing ----
-   Columns: P-Code, Product, TP, TODAY Qty, Bon, MTD Qty, Bon, Return...
-   Use the first 5 integers AFTER the TP price: today=1st, MTD=3rd, return=5th. */
+   Columns: P-Code, Product, TP, TODAY Qty, Bon, MTD Qty, (other columns ignored).
+   Only two numbers are used: today = 1st integer after the TP price,
+   till-date (MTD) = 3rd integer after the TP price. */
 function parseSalesOCR(text) {
   const merged = {};
   text.split("\n").forEach((line) => {
     const up = line.toUpperCase();
     if (up.indexOf("GROUP TOTAL") >= 0) return;
-    const pm = line.match(/(^|\s)\d+\.\d{2}(\s|$)/);
+    const pm = line.match(/(^|\s):?\d+\.\d{2}(\s|$)/);
     if (!pm) return;
     const token = pm[0].trim();
     const pidx = pm.index + pm[0].indexOf(token);
     const after = line.slice(pidx + token.length);
     const ints = after.match(/\d+/g);
-    if (!ints || ints.length < 5) return;
+    if (!ints || ints.length < 3) return;
     const name = matchSalesProduct(up);
     if (!name) return;
-    const v = ints.slice(0, 5).map(Number);
-    if (!merged[name]) merged[name] = { product: name, today: 0, mtd: 0, ret: 0 };
+    const v = ints.slice(0, 3).map(Number);
+    if (!merged[name]) merged[name] = { product: name, today: 0, mtd: 0 };
     merged[name].today += v[0];
     merged[name].mtd += v[2];
-    merged[name].ret += v[4];
   });
   return Object.keys(merged).map((k) => merged[k]);
 }
@@ -1410,12 +1410,11 @@ function parseTargetOCR(text) {
 function renderOcrSalesPreview() {
   const host = $("ocr-sales-preview");
   if (!ocrSalesRows.length) { host.innerHTML = ""; $("btn-apply-ocr-sales").disabled = true; return; }
-  let html = '<table class="data"><tr><th>Product</th><th>Today</th><th>Till date</th><th>Return</th></tr>';
+  let html = '<table class="data"><tr><th>Product</th><th>Today</th><th>Till date</th></tr>';
   ocrSalesRows.forEach((r, i) => {
     html += "<tr><td>" + escHtml(r.product) + "</td>" +
       '<td><input id="ocrs-t-' + i + '" type="number" min="0" step="1" value="' + r.today + '"></td>' +
-      '<td><input id="ocrs-m-' + i + '" type="number" min="0" step="1" value="' + r.mtd + '"></td>' +
-      '<td><input id="ocrs-r-' + i + '" type="number" min="0" step="1" value="' + r.ret + '"></td></tr>';
+      '<td><input id="ocrs-m-' + i + '" type="number" min="0" step="1" value="' + r.mtd + '"></td></tr>';
   });
   host.innerHTML = html + "</table><p class='muted'>Check the numbers — you can edit before applying.</p>";
   $("btn-apply-ocr-sales").disabled = false;
@@ -1424,8 +1423,7 @@ function readOcrSalesPreview() {
   return ocrSalesRows.map((r, i) => ({
     product: r.product,
     today: Math.max(0, Math.floor(Number($("ocrs-t-" + i).value) || 0)),
-    mtd: Math.max(0, Math.floor(Number($("ocrs-m-" + i).value) || 0)),
-    ret: Math.max(0, Math.floor(Number($("ocrs-r-" + i).value) || 0))
+    mtd: Math.max(0, Math.floor(Number($("ocrs-m-" + i).value) || 0))
   }));
 }
 function renderOcrTargetPreview() {
@@ -1460,7 +1458,7 @@ function applyOcrSales() {
       state.data.salesLog.push({ id: uid(), date: rdate, product: r.product, qty: r.today, source: "ocr" });
     }
     p.tillSale = Math.max(0, r.mtd);
-    p.tillReturn = Math.max(0, r.ret);
+    // tillReturn is left untouched: this report has no return column.
   });
   markDirty(); renderDashboard();
   toast("Applied for " + rdate + ".");
