@@ -401,6 +401,14 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
         <h2 data-i18n="teamOverview">Team Overview</h2>
         <div id="team-overview"></div>
       </div>
+      <div class="card">
+        <h2 data-i18n="teamReport">Team Report</h2>
+        <pre id="team-report-text" style="white-space:pre-wrap;background:#f4f4f5;padding:.6rem;border-radius:8px;font-size:.85rem;margin:0"></pre>
+        <div class="row" style="margin-top:.6rem">
+          <button id="btn-team-report-copy" type="button" class="ghost" style="flex:1" data-i18n="copy">Copy</button>
+          <button id="btn-team-report-wa" type="button" style="flex:1">WhatsApp</button>
+        </div>
+      </div>
       <div class="card" id="team-member-card" hidden>
         <h2 id="team-member-title"></h2>
         <div id="team-member-body"></div>
@@ -492,7 +500,7 @@ en: {
   advice: "Advice", overallProgress: "Overall progress", toReach: "to reach",
   qHelp: "Samajh nahi aaya. Ye puch sakte ho: mera incentive kitna hai? | aaj ki sale? | target? | projection? | working days?",
   teamEntry: "Team Sales Entry", teamEntryHint: "Teeno members ki sale ek saath likho, phir Save dabao.",
-  teamOverview: "Team Overview", back: "Back", savedFor: "Saved for",
+  teamOverview: "Team Overview", teamReport: "Team Report", copy: "Copy", copied: "Copied.", back: "Back", savedFor: "Saved for",
   grossTotal: "Total sale", deduction: "deduction", netTotal: "Net sale",
   noEntries: "Enter at least one quantity."
 },
@@ -539,7 +547,7 @@ ur: {
   advice: "مشورہ", overallProgress: "مجموعی پیش رفت", toReach: "حاصل کرنے کے لیے",
   qHelp: "سمجھ نہیں آیا۔ یہ پوچھ سکتے ہو: میرا انسینٹیو کتنا ہے؟ | آج کی سیل؟ | ٹارگٹ؟ | تخمینہ؟ | کام کے دن؟",
   teamEntry: "ٹیم سیل انٹری", teamEntryHint: "تینوں ممبرز کی سیل ایک ساتھ لکھو، پھر سیو دباؤ۔",
-  teamOverview: "ٹیم کا جائزہ", back: "واپس", savedFor: "محفوظ ہو گیا",
+  teamOverview: "ٹیم کا جائزہ", teamReport: "ٹیم رپورٹ", copy: "کاپی", copied: "کاپی ہو گیا۔", back: "واپس", savedFor: "محفوظ ہو گیا",
   grossTotal: "کل سیل", deduction: "کٹوتی", netTotal: "خالص سیل",
   noEntries: "کم از کم ایک مقدار لکھو۔"
 }
@@ -1990,8 +1998,80 @@ function showTeamMember(name) {
 function renderTeam() {
   renderTeamEntry();
   renderTeamOverview();
+  renderTeamReport();
   $("team-member-card").hidden = true;
   $("team-save-summary").innerHTML = "";
+}
+
+/* ---- Team SMS report ---- */
+const TEAM_SHORT_NAMES = {
+  "Bennivair 0.8MG": "Bennivair",
+  "Bennivair 0.8/1.6": "Bennivair S",
+  "Combivair Forte": "Combivair fort",
+  "Ipravir 0.025%": "Ipravir",
+  "Ipravir S Respule": "Ipravir S",
+  "Kestine Tablets 10": "Kestine 10mg",
+  "Kestine 20mg": "Kestine 20mg",
+  "Kestine Liquid 60ml": "Kestine liquid"
+};
+function teamShortName(n) { return TEAM_SHORT_NAMES[n] || n; }
+function teamTotalsByProduct() {
+  const map = {};
+  state.data.products.forEach((p) => { map[p.name] = { sale: 0, target: 0, price: Number(p.price) || 0 }; });
+  (state.data.teamLog || []).forEach((e) => {
+    if (map[e.product]) map[e.product].sale += (Number(e.qty) || 0);
+  });
+  const tt = state.data.teamTargets || {};
+  Object.keys(tt).forEach((m) => {
+    Object.keys(tt[m]).forEach((pn) => {
+      if (map[pn]) map[pn].target += (Number(tt[m][pn]) || 0);
+    });
+  });
+  return map;
+}
+function buildTeamReport() {
+  const wi = workingInfo();
+  const d = todayStr();
+  const ds = d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + d.slice(0, 4);
+  const map = teamTotalsByProduct();
+  let saleVal = 0, tgtVal = 0, tSale = 0, tTgt = 0;
+  const lines = ["Date. " + ds, "Sales Vs achievements"];
+  state.data.products.forEach((p) => {
+    const r = map[p.name];
+    const ach = r.target > 0 ? Math.round((r.sale / r.target) * 100) : 0;
+    lines.push(teamShortName(p.name) + ". " + r.sale + "/" + r.target + "/" + ach + "%");
+    saleVal += r.sale * r.price; tgtVal += r.target * r.price;
+    tSale += r.sale; tTgt += r.target;
+  });
+  const achAll = tTgt > 0 ? Math.round((tSale / tTgt) * 100) : 0;
+  lines.push("Value " + Math.round(saleVal) + "/" + Math.round(tgtVal));
+  lines.push("Achievement " + achAll + "%");
+  lines.push("Time passed. " + Math.round(wi.timePct) + "%");
+  return lines.join("\n");
+}
+function renderTeamReport() {
+  const host = $("team-report-text");
+  if (host && state.data) host.textContent = buildTeamReport();
+}
+function copyTeamReport() {
+  const txt = buildTeamReport();
+  const done = () => toast(t("copied"));
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, () => fallbackCopyTeamReport(txt, done));
+    } else fallbackCopyTeamReport(txt, done);
+  } catch (e) { fallbackCopyTeamReport(txt, done); }
+}
+function fallbackCopyTeamReport(txt, done) {
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta); done();
+  } catch (e) { showError("Copy failed."); }
+}
+function sendTeamReportWhatsApp() {
+  window.open("https://wa.me/?text=" + encodeURIComponent(buildTeamReport()), "_blank");
 }
 
 /* ---- UI wiring ---- */
@@ -2261,6 +2341,8 @@ function wireUI() {
   $("btn-lang").addEventListener("click", () => setLang(lang === "ur" ? "en" : "ur"));
   $("btn-team-save").addEventListener("click", saveTeamEntries);
   $("btn-team-back").addEventListener("click", () => { $("team-member-card").hidden = true; });
+  $("btn-team-report-copy").addEventListener("click", copyTeamReport);
+  $("btn-team-report-wa").addEventListener("click", sendTeamReportWhatsApp);
 }
 
 /* ---- Init ---- */
