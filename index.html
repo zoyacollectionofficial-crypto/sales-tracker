@@ -385,7 +385,10 @@ const state = {
   isManager: false,
   data: null,       // JSONB payload
   dirty: false,
-  sb: null          // supabase client
+  sb: null,         // supabase client
+  syncing: false,   // a cloud push is in flight
+  syncError: null,  // last cloud push error message (null = ok)
+  freshDefaults: false // true when data is fresh zeros and cloud state is unknown: never push these
 };
 let pushTimer = null;
 let ocrSalesRows = [];   // parsed sales-OCR rows (editable preview)
@@ -536,30 +539,42 @@ function loadLocal() {
 function updateSyncPill() {
   const pill = $("sync-pill");
   if (!state.user) { pill.textContent = "Synced"; pill.className = "pill ok"; return; }
-  if (!navigator.onLine || state.dirty) {
-    pill.textContent = "Offline: saved on this device";
-    pill.className = "pill warn";
+  if (state.syncing) {
+    pill.textContent = "Saving…"; pill.className = "pill warn"; pill.title = "";
+  } else if (state.syncError) {
+    pill.textContent = "Cloud save failed"; pill.className = "pill bad"; pill.title = state.syncError;
+  } else if (!navigator.onLine || state.dirty) {
+    pill.textContent = "Saved on this device"; pill.className = "pill warn"; pill.title = "";
   } else {
-    pill.textContent = "Synced";
-    pill.className = "pill ok";
+    pill.textContent = "Synced"; pill.className = "pill ok"; pill.title = "";
   }
 }
 function markDirty() {
   state.dirty = true;
+  state.freshDefaults = false; // the user changed something: this data is theirs, safe to push
+  state.syncError = null;
   saveLocal();
   updateSyncPill();
   clearTimeout(pushTimer);
   pushTimer = setTimeout(pushToCloud, 500);
 }
 async function pushToCloud() {
+  if (state.freshDefaults) { updateSyncPill(); return; } // never push fresh zeros over unknown cloud state
   if (!state.user || !navigator.onLine) { updateSyncPill(); return; }
+  state.syncing = true; updateSyncPill();
   try {
     const sb = getClient();
     const { error } = await sb.from("user_data").upsert({ user_id: state.user.id, data: state.data });
     if (error) throw error;
     state.dirty = false;
+    state.syncError = null;
   } catch (e) {
-    console.warn("pushToCloud failed (will retry):", e.message || e);
+    const msg = e.message || String(e);
+    if (state.syncError !== msg) toast("Cloud save failed: " + msg); // alert once per distinct error
+    state.syncError = msg;
+    console.warn("pushToCloud failed (will retry):", msg);
+  } finally {
+    state.syncing = false;
   }
   updateSyncPill();
 }
@@ -662,26 +677,32 @@ async function handleSetPassword() {
 /* ---- Load / create user data ---- */
 async function loadUserData() {
   const sb = getClient();
-  let data = null;
+  let cloudData = null, cloudEmpty = false;
   if (navigator.onLine) {
     try {
       const { data: row, error } = await sb.from("user_data").select("data").eq("user_id", state.user.id).maybeSingle();
       if (error) throw error;
-      if (row && row.data) data = row.data;
+      if (row && row.data) cloudData = row.data;
+      else cloudEmpty = true; // select worked: this user genuinely has no cloud row yet
     } catch (e) {
       console.warn("cloud load failed, using local copy:", e.message || e);
     }
   }
-  if (!data) data = loadLocal();
+  let data = cloudData || loadLocal();
+  let fresh = false;
   if (!data) {
     data = defaultData(state.user.email || "");
-    state.dirty = true;
+    fresh = true;
   }
   state.data = ensureDefaults(data);
   if (!state.data.email && state.user.email) state.data.email = state.user.email;
   saveLocal();
-  updateSyncPill();
-  if (state.dirty) pushToCloud();
+  // Never overwrite cloud data with fresh zeros unless cloud is confirmed empty.
+  state.freshDefaults = fresh && !cloudEmpty;
+  state.dirty = true;
+  state.syncError = null;
+  if (state.freshDefaults) updateSyncPill();
+  else pushToCloud();
 }
 
 async function checkManager() {
