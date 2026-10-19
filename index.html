@@ -1281,20 +1281,24 @@ function renderHistory() {
 }
 
 /* ---- OCR: product name matching ---- */
+/* OCR-tolerant: match on short distinctive letter cores so Tesseract misreads
+   ("BENNIVAR", "8ENNIVAIR", "NII PRAVAIR") still resolve. */
 function matchSalesProduct(up) {
-  if (up.indexOf("BENNIVAIR") >= 0) {
-    if (up.indexOf("1.6") >= 0 || up.indexOf("1/6") >= 0 || /BENNIVAIR[-\s]?S\b/.test(up)) return "Bennivair 0.8/1.6";
+  const U = String(up || "").toUpperCase();
+  const letters = U.replace(/[^A-Z]/g, "");
+  if (/NNIV/.test(letters)) {
+    if (/1\.6/.test(U) || /1\/6/.test(U) || /NNIVA?I?R?S/.test(letters)) return "Bennivair 0.8/1.6";
     return "Bennivair 0.8MG";
   }
-  if (up.indexOf("COMBIVAIR") >= 0) return "Combivair Forte";
-  if (up.indexOf("IPRAVAIR") >= 0) {
-    if (/IPRAVAIR[-\s]?S\b/.test(up)) return "Ipravir S Respule";
+  if (/COMBIV/.test(letters)) return "Combivair Forte";
+  if (/PRAVAIR|PRAVAR/.test(letters)) {
+    if (/(PRAVAIR|PRAVAR)[-\s]?S\b/.test(U)) return "Ipravir S Respule";
     return "Ipravir 0.025%";
   }
-  if (up.indexOf("KESTINE") >= 0) {
-    if (up.indexOf("LIQUID") >= 0) return "Kestine Liquid 60ml";
-    if (up.indexOf("10") >= 0) return "Kestine Tablets 10";
-    if (up.indexOf("20") >= 0) return "Kestine 20mg";
+  if (/KESTINE/.test(letters)) {
+    if (/LIQUID/.test(letters)) return "Kestine Liquid 60ml";
+    if (/10/.test(U)) return "Kestine Tablets 10";
+    if (/20/.test(U)) return "Kestine 20mg";
     return null;
   }
   return null;
@@ -1343,23 +1347,39 @@ function isBrandTotalRow(nameTokens) {
 
 /* ---- OCR: sales report parsing ----
    Columns: P-Code, Product, TP, TODAY Qty, Bon, MTD Qty, Bon, Return, (others ignored).
-   Three numbers are used: today = 1st integer after the TP price,
-   till-date (MTD) = 3rd integer, return = 5th integer. */
+   Three numbers are used: today = 1st, till-date (MTD) = 3rd, return = 5th of the
+   quantity columns.
+   Robustness: the TP price is often misread by OCR (":07.50" -> ";07.50", "107,50"...),
+   so two strategies are tried: (1) anchor on the TP decimal token and take the
+   integers after it; (2) fallback to the trailing run of integer tokens (last 8). */
 function parseSalesOCR(text) {
   const merged = {};
+  const isInt = (t) => /^-?[\d,]+$/.test(t);
   text.split("\n").forEach((line) => {
     const up = line.toUpperCase();
     if (up.indexOf("GROUP TOTAL") >= 0) return;
-    const pm = line.match(/(^|\s):?\d+\.\d{2}(\s|$)/);
-    if (!pm) return;
-    const token = pm[0].trim();
-    const pidx = pm.index + pm[0].indexOf(token);
-    const after = line.slice(pidx + token.length);
-    const ints = after.match(/\d+/g);
-    if (!ints || ints.length < 5) return;
     const name = matchSalesProduct(up);
     if (!name) return;
-    const v = ints.slice(0, 5).map(Number);
+    const tokens = line.trim().split(/\s+/);
+    let cols = null;
+    for (let i = 0; i < tokens.length; i++) {
+      if (/^:?\d+\.\d{2}$/.test(tokens[i])) {
+        const rest = [];
+        for (let k = i + 1; k < tokens.length && rest.length < 8; k++) {
+          if (isInt(tokens[k])) rest.push(tokens[k]);
+        }
+        if (rest.length >= 5) cols = rest;
+        break;
+      }
+    }
+    if (!cols) {
+      let j = tokens.length - 1;
+      while (j >= 0 && isInt(tokens[j])) j--;
+      const run = tokens.slice(j + 1);
+      if (run.length >= 5) cols = run.length >= 8 ? run.slice(-8) : run;
+    }
+    if (!cols) return;
+    const v = cols.slice(0, 5).map((t) => Number(t.replace(/,/g, "")));
     if (!merged[name]) merged[name] = { product: name, today: 0, mtd: 0, ret: 0 };
     merged[name].today += v[0];
     merged[name].mtd += v[2];
