@@ -27,11 +27,12 @@ html[data-theme="dark"]{
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
   background:var(--bg); color:var(--text); font-size:15px; line-height:1.45;}
-header.topbar{position:sticky; top:0; z-index:20; background:var(--card);
+header.topbar{background:var(--card);
   border-bottom:1px solid var(--border); padding:.6rem .9rem;
   display:flex; align-items:center; gap:.6rem; box-shadow:var(--shadow);}
 header.topbar h1{font-size:1.05rem; margin:0; flex:1;}
-.wrap{max-width:760px; margin:0 auto; padding:.8rem .8rem 5.5rem;}
+.sticky-nav{position:sticky; top:0; z-index:30;}
+.wrap{max-width:760px; margin:0 auto; padding:.8rem .8rem 1.2rem;}
 .card{background:var(--card); border:1px solid var(--border); border-radius:14px;
   padding:.9rem; margin-bottom:.8rem; box-shadow:var(--shadow);}
 .card h2{font-size:1rem; margin:0 0 .6rem;}
@@ -62,14 +63,15 @@ button:disabled{opacity:.55; cursor:default;}
 html[data-theme="dark"] .pill.warn{background:#451a03; color:#fbbf24;}
 .pill.bad{background:var(--danger-soft); color:var(--danger);}
 #sync-pill{font-size:.75rem;}
-nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:20; background:var(--card);
-  border-top:1px solid var(--border); display:flex; overflow-x:auto;}
-nav.tabs button{flex:1; min-width:64px; background:none; color:var(--muted); border-radius:0;
-  padding:.55rem .2rem; font-size:.68rem; font-weight:600; border-top:3px solid transparent;}
-nav.tabs button.active{color:var(--accent); border-top-color:var(--accent);}
+nav.tabs{background:var(--card); border-bottom:1px solid var(--border);
+  display:flex; overflow-x:auto; box-shadow:var(--shadow);}
+nav.tabs button{flex:1; min-width:70px; background:none; color:var(--muted); border-radius:0;
+  padding:.65rem .4rem; font-size:.72rem; font-weight:700; border-bottom:3px solid transparent;
+  white-space:nowrap;}
+nav.tabs button.active{color:var(--accent); border-bottom-color:var(--accent);}
 #error-box{display:none; background:var(--danger-soft); color:var(--danger);
   border:1px solid var(--danger); border-radius:10px; padding:.6rem .8rem; margin-bottom:.8rem; font-size:.88rem;}
-#toast{position:fixed; left:50%; transform:translateX(-50%); bottom:4.6rem; z-index:50;
+#toast{position:fixed; left:50%; transform:translateX(-50%); bottom:1.2rem; z-index:50;
   background:#0f172a; color:#fff; padding:.6rem 1rem; border-radius:10px; font-size:.85rem;
   display:none; max-width:92vw; box-shadow:0 4px 16px rgba(0,0,0,.3);}
 table.data{width:100%; border-collapse:collapse; font-size:.82rem;}
@@ -96,6 +98,15 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
 }
 .remaining-dates{max-height:130px; overflow:auto; font-size:.8rem; color:var(--muted);}
 .ocr-status{font-size:.85rem; margin:.4rem 0;}
+@media (max-width:640px){
+  .grid2{grid-template-columns:1fr;}
+  table.data{display:block; max-width:100%; overflow-x:auto;}
+  table.data th,table.data td{white-space:nowrap;}
+  nav.tabs button{font-size:.7rem; padding:.7rem .45rem;}
+  input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],select{font-size:16px;}
+  header.topbar{flex-wrap:wrap;}
+  .card{padding:.8rem;}
+}
 </style>
 </head>
 <body>
@@ -143,6 +154,16 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
 
   <!-- ============ MAIN APP ============ -->
   <div id="screen-main" hidden>
+    <div class="sticky-nav">
+    <nav class="tabs" id="main-tabs">
+      <button type="button" data-tab="tab-dashboard" class="active">Dashboard</button>
+      <button type="button" data-tab="tab-working">Working Days</button>
+      <button type="button" data-tab="tab-incentive">Incentive</button>
+      <button type="button" data-tab="tab-history">History</button>
+      <button type="button" data-tab="tab-upload">Upload</button>
+      <button type="button" data-tab="tab-manager" id="tabbtn-manager" hidden>Team</button>
+    </nav>
+    </div>
 
     <section id="tab-dashboard">
       <div class="card">
@@ -319,15 +340,6 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
         <div id="team-body" style="margin-top:.6rem"></div>
       </div>
     </section>
-
-    <nav class="tabs" id="main-tabs">
-      <button type="button" data-tab="tab-dashboard" class="active">Dashboard</button>
-      <button type="button" data-tab="tab-working">Working Days</button>
-      <button type="button" data-tab="tab-incentive">Incentive</button>
-      <button type="button" data-tab="tab-history">History</button>
-      <button type="button" data-tab="tab-upload">Upload</button>
-      <button type="button" data-tab="tab-manager" id="tabbtn-manager" hidden>Team</button>
-    </nav>
   </div>
 </div>
 
@@ -399,6 +411,7 @@ function showError(msg) {
   box.style.display = "block";
   toast("Error: " + msg);
   console.error(msg);
+  try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {}
 }
 function clearError() { $("error-box").style.display = "none"; }
 
@@ -1468,38 +1481,52 @@ function renderOcrTargetPreview() {
 }
 function applyOcrSales() {
   clearError();
-  const rdate = $("ocr-report-date").value || todayStr();
-  if (!parseDate(rdate)) { showError("Pick a valid report date."); return; }
-  const rows = readOcrSalesPreview();
-  if (!rows.length) { showError("No OCR rows to apply."); return; }
-  rows.forEach((r) => {
-    const p = state.data.products.find((x) => x.name === r.product);
-    if (!p) return;
-    state.data.salesLog = (state.data.salesLog || []).filter(
-      (e) => !(e.source === "ocr" && e.date === rdate && e.product === r.product));
-    if (r.today > 0) {
-      state.data.salesLog.push({ id: uid(), date: rdate, product: r.product, qty: r.today, source: "ocr" });
-    }
-    p.tillSale = Math.max(0, r.mtd);
-    p.tillReturn = Math.max(0, r.ret);
-  });
-  markDirty(); renderDashboard();
-  toast("Applied for " + rdate + ".");
-  reportDateManual = false; // back to today from now on
-  refreshReportDate();
+  try {
+    if (!state.data) { showError("Data not loaded. Please re-login."); return; }
+    const rdate = $("ocr-report-date").value || todayStr();
+    if (!parseDate(rdate)) { showError("Pick a valid report date."); return; }
+    const rows = readOcrSalesPreview();
+    if (!rows.length) { showError("No OCR rows to apply."); return; }
+    let n = 0;
+    const missing = [];
+    rows.forEach((r) => {
+      const p = state.data.products.find((x) => x.name === r.product);
+      if (!p) { missing.push(r.product); return; }
+      state.data.salesLog = (state.data.salesLog || []).filter(
+        (e) => !(e.source === "ocr" && e.date === rdate && e.product === r.product));
+      if (r.today > 0) {
+        state.data.salesLog.push({ id: uid(), date: rdate, product: r.product, qty: r.today, source: "ocr" });
+      }
+      p.tillSale = Math.max(0, r.mtd);
+      p.tillReturn = Math.max(0, r.ret);
+      n++;
+    });
+    if (!n) { showError("No matching products found" + (missing.length ? ": " + missing.join(", ") : "") + "."); return; }
+    markDirty(); renderDashboard();
+    toast("Applied for " + rdate + ".");
+    reportDateManual = false; // back to today from now on
+    refreshReportDate();
+    switchTab("tab-dashboard"); // show the assigned values
+  } catch (e) { showError("Apply failed: " + (e && e.message || e)); }
 }
 function applyOcrTargets() {
   clearError();
-  if (!ocrTargetRows.length) { showError("No OCR rows to apply."); return; }
-  let n = 0;
-  ocrTargetRows.forEach((r, i) => {
-    const el = $("ocrt-" + i);
-    const v = Math.max(0, Math.floor(Number(el ? el.value : r.target) || 0));
-    const p = state.data.products.find((x) => x.name === r.product);
-    if (p) { p.target = v; n++; }
-  });
-  markDirty(); renderDashboard();
-  toast("Targets updated for " + n + " products.");
+  try {
+    if (!state.data) { showError("Data not loaded. Please re-login."); return; }
+    if (!ocrTargetRows.length) { showError("No OCR rows to apply."); return; }
+    let n = 0;
+    const missing = [];
+    ocrTargetRows.forEach((r, i) => {
+      const el = $("ocrt-" + i);
+      const v = Math.max(0, Math.floor(Number(el && el.value ? el.value : r.target) || 0));
+      const p = state.data.products.find((x) => x.name === r.product);
+      if (p) { p.target = v; n++; } else { missing.push(r.product); }
+    });
+    if (!n) { showError("No matching products found" + (missing.length ? ": " + missing.join(", ") : "") + "."); return; }
+    markDirty(); renderDashboard();
+    toast("Targets updated for " + n + " products.");
+    switchTab("tab-dashboard"); // show the assigned values
+  } catch (e) { showError("Apply failed: " + (e && e.message || e)); }
 }
 async function handleSalesOcr() {
   const f = $("ocr-sales-file").files[0];
