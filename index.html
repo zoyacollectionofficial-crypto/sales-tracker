@@ -328,6 +328,14 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
           <pre id="ocr-target-raw" class="muted" style="white-space:pre-wrap; font-size:.75rem"></pre>
         </details>
       </div>
+      <div class="card">
+        <h2>Save Diagnostics</h2>
+        <p class="muted">Agar data save nahi ho raha to "Run test" dabao — ye check karega ke masla kahan hai. Jo result aaye wo bhej do.</p>
+        <pre id="diag-output" class="muted" style="white-space:pre-wrap; font-size:.8rem; margin:.5rem 0;"></pre>
+        <div class="row" style="margin-top:.4rem">
+          <button id="btn-diag" type="button" class="ghost" style="flex:1">Run test</button>
+        </div>
+      </div>
     </section>
 
     <section id="tab-manager" hidden>
@@ -703,6 +711,56 @@ async function loadUserData() {
   state.syncError = null;
   if (state.freshDefaults) updateSyncPill();
   else pushToCloud();
+}
+
+/* ---- Save diagnostics: pinpoints where the save chain breaks ---- */
+async function runDiagnostics() {
+  const outEl = $("diag-output");
+  const lines = [];
+  const log = (s) => { lines.push(s); outEl.textContent = lines.join("\n"); };
+  log("Testing…");
+  // 1. Which service worker file is served?
+  try {
+    const swText = await (await fetch("./sw.js", { cache: "no-store" })).text();
+    log("Service worker: " + (swText.indexOf("app-v2") >= 0
+      ? "NEW (v2) ✓"
+      : "OLD (v1) ✗ — reload this page twice, then run the test again"));
+  } catch (e) { log("Service worker: could not fetch (" + (e.message || e) + ")"); }
+  try {
+    log("Service worker active: " + (navigator.serviceWorker && navigator.serviceWorker.controller ? "yes" : "no"));
+  } catch (e) { log("Service worker active: unknown"); }
+  // 2. This-device storage (localStorage)
+  try {
+    localStorage.setItem("__st_diag", "1");
+    const ok = localStorage.getItem("__st_diag") === "1";
+    localStorage.removeItem("__st_diag");
+    log("This-device storage: " + (ok ? "OK ✓" : "FAILED ✗ — browser is blocking storage"));
+  } catch (e) { log("This-device storage: FAILED ✗ (" + (e.message || e) + ")"); }
+  // 3. Login state
+  log("Logged in as: " + (state.user ? (state.user.email || state.user.id) : "NOT LOGGED IN ✗"));
+  log("Online: " + (navigator.onLine ? "yes" : "no"));
+  // 4. Cloud write + read round-trip (non-destructive: writes current data back with a marker, then removes it)
+  if (!state.user || !state.data) {
+    log("Cloud test: skipped (no user/data loaded)");
+  } else {
+    try {
+      const sb = getClient();
+      const marker = "diag-" + Date.now();
+      const payload = JSON.parse(JSON.stringify(state.data));
+      payload._diag = marker;
+      const { error: werr } = await sb.from("user_data").upsert({ user_id: state.user.id, data: payload });
+      if (werr) throw werr;
+      const { data: row, error: rerr } = await sb.from("user_data").select("data").eq("user_id", state.user.id).maybeSingle();
+      if (rerr) throw rerr;
+      const back = row && row.data && row.data._diag;
+      log("Cloud save: " + (back === marker ? "OK ✓ (write + read verified)" : "WRITE OK but read-back mismatch ✗"));
+      try {
+        delete payload._diag;
+        await sb.from("user_data").upsert({ user_id: state.user.id, data: payload });
+      } catch (e) { /* marker cleanup is best-effort */ }
+    } catch (e) { log("Cloud save: FAILED ✗ (" + (e.message || e) + ")"); }
+  }
+  log("Done. Agar kuch FAILED ✗ hai to ye poora text copy karke bhej do.");
 }
 
 async function checkManager() {
@@ -1696,6 +1754,7 @@ function wireUI() {
   $("ocr-report-date").addEventListener("change", () => { reportDateManual = true; });
   $("btn-apply-ocr-sales").addEventListener("click", applyOcrSales);
   $("btn-apply-ocr-targets").addEventListener("click", applyOcrTargets);
+  $("btn-diag").addEventListener("click", runDiagnostics);
   $("btn-load-team").addEventListener("click", loadTeam);
   $("btn-team-excel").addEventListener("click", exportTeamExcel);
 }
