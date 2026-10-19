@@ -7,8 +7,8 @@
 <meta name="description" content="Daily sales tracker for medical representatives — targets, returns, working days and incentives.">
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#0f766e">
-<link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
-<link rel="apple-touch-icon" href="./icons/icon.svg">
+<link rel="icon" type="image/png" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
 <style>
 :root{
   --bg:#f1f5f9; --card:#ffffff; --text:#0f172a; --muted:#64748b;
@@ -214,7 +214,7 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
       </div>
       <div class="card">
         <h2>Manual Override</h2>
-        <p class="muted">Leave empty for automatic calculation.</p>
+        <p class="muted">Type your own numbers for today only. From tomorrow the app is automatic again.</p>
         <div class="grid2">
           <div>
             <label class="f" for="override-total">Total working days</label>
@@ -233,6 +233,10 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
     </section>
 
     <section id="tab-incentive" hidden>
+      <div class="card">
+        <h2>Month-End Projection</h2>
+        <div id="projection-body"></div>
+      </div>
       <div class="card">
         <h2>Incentive</h2>
         <div id="incentive-body"></div>
@@ -269,7 +273,8 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
     <section id="tab-upload" hidden>
       <div class="card">
         <h2>Upload Sales Screenshot</h2>
-        <p class="muted">Pick an image of the distributor report. Columns: P-Code, Product, TP, TODAY Qty, Bon, MTD Qty, Bon, Return…</p>
+        <p class="muted">Upload the report image, check the numbers, then Apply.</p>
+        <label class="f" for="ocr-sales-file">Screenshot</label>
         <input id="ocr-sales-file" type="file" accept="image/*">
         <div class="ocr-status" id="ocr-sales-status"></div>
         <div id="ocr-sales-preview"></div>
@@ -289,7 +294,8 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
       </div>
       <div class="card">
         <h2>Upload Target Screenshot</h2>
-        <p class="muted">You can select multiple images. TARGET is the last number in each row.</p>
+        <p class="muted">Upload the target image(s), check the numbers, then Apply.</p>
+        <label class="f" for="ocr-target-file">Screenshots</label>
         <input id="ocr-target-file" type="file" accept="image/*" multiple>
         <div class="ocr-status" id="ocr-target-status"></div>
         <div id="ocr-target-preview"></div>
@@ -373,6 +379,17 @@ let pushTimer = null;
 let ocrSalesRows = [];   // parsed sales-OCR rows (editable preview)
 let ocrTargetRows = [];  // parsed target-OCR rows (editable preview)
 
+/* ---- Report date: always follows today unless the user picked a date manually ---- */
+let reportDateManual = false; // true after the user picks a date, cleared on Apply
+function refreshReportDate() {
+  if (reportDateManual) return; // keep the user's manual pick until Apply
+  const el = $("ocr-report-date");
+  if (el) el.value = todayStr(); // phone's local date
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshReportDate(); });
+setInterval(refreshReportDate, 60000);            // every minute
+setInterval(refreshReportDate, 30000);            // midnight check: updates the field when the date changes
+
 /* ---- Small utilities (defined before use) ---- */
 function $(id) { return document.getElementById(id); }
 
@@ -441,8 +458,7 @@ function defaultData(email) {
     products: DEFAULT_PRODUCTS.map(makeProduct),
     salesLog: [],
     holidays: [],
-    overrideTotal: null,
-    overrideLeft: null,
+    workOverride: null,
     history: []
   };
 }
@@ -455,6 +471,9 @@ function ensureDefaults(data) {
   if (!Array.isArray(data.salesLog)) data.salesLog = [];
   if (!Array.isArray(data.holidays)) data.holidays = [];
   if (!Array.isArray(data.history)) data.history = [];
+  // Silently drop legacy working-day override fields (replaced by the dated workOverride).
+  delete data.wt; delete data.wl;
+  delete data.overrideTotal; delete data.overrideLeft;
   const have = new Set(data.products.map((p) => p.name));
   DEFAULT_PRODUCTS.forEach((def) => {
     if (!have.has(def.name)) data.products.push(makeProduct(def));
@@ -561,9 +580,10 @@ function switchTab(tabId) {
     b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
   });
   if (tabId === "tab-working") renderWorking();
-  if (tabId === "tab-incentive") { renderIncentive(); renderReceipt(); }
+  if (tabId === "tab-incentive") { renderProjection(); renderIncentive(); renderReceipt(); }
   if (tabId === "tab-history") renderHistory();
   if (tabId === "tab-dashboard") renderDashboard();
+  if (tabId === "tab-upload") refreshReportDate();
 }
 
 /* ---- Auth ---- */
@@ -716,11 +736,15 @@ function workingInfo() {
     remDates.push(key);
   }
   const autoLeft = remDates.length;
-  const total = (state.data.overrideTotal != null && state.data.overrideTotal !== "") ? Number(state.data.overrideTotal) : autoTotal;
-  const left = (state.data.overrideLeft != null && state.data.overrideLeft !== "") ? Number(state.data.overrideLeft) : autoLeft;
+  // Dated override: applies only while its date equals today. From tomorrow the app is automatic again.
+  const ov = state.data.workOverride;
+  const useOv = !!(ov && ov.date === t && Number(ov.total) >= 0 && Number(ov.left) >= 0);
+  const total = useOv ? Number(ov.total) : autoTotal;
+  const left = useOv ? Number(ov.left) : autoLeft;
   const elapsed = total > 0 ? Math.max(total - left + 1, 0) : 0;
   const timePct = total > 0 ? (elapsed / total) * 100 : 0;
   return { year, month, daysInMonth, sundays, holCount, autoTotal, autoLeft, total, left, remDates, elapsed, timePct,
+           overrideActive: useOv,
            todayLabel: now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) };
 }
 
@@ -803,7 +827,10 @@ function renderDashboard() {
     opt.value = p.name; opt.textContent = p.name;
     sel.appendChild(opt);
   });
-  if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
+  // Never leave the dropdown blank: keep the current selection only if it still exists.
+  const names = state.data.products.map((p) => p.name);
+  if (cur && names.indexOf(cur) >= 0) sel.value = cur;
+  else if (sel.options.length) sel.selectedIndex = 0;
   renderLog();
   renderOverall(wi);
   renderProductCards(wi);
@@ -966,20 +993,23 @@ function renderWorking() {
   if (!state.data) return;
   const wi = workingInfo();
   const mName = monthLabel(wi.year, wi.month);
+  const onlyToday = wi.overrideActive ? " (your numbers, today only)" : "";
   let html =
     kv("Today", escHtml(wi.todayLabel)) +
     '<div class="kv"><span class="muted">' + escHtml(mName) + '</span><b>' +
     wi.daysInMonth + " days \u2212 " + wi.sundays + " Sundays \u2212 " + wi.holCount + " holidays = " +
     wi.autoTotal + " working days</b></div>" +
-    kv("Total working days", fmtNum(wi.total) + (state.data.overrideTotal ? " (manual)" : "")) +
-    kv("Working days left (incl. today)", fmtNum(wi.left) + (state.data.overrideLeft ? " (manual)" : "")) +
+    kv("Total working days", fmtNum(wi.total) + onlyToday) +
+    kv("Working days left (incl. today)", fmtNum(wi.left) + onlyToday) +
     kv("Time elapsed", fmtPct(wi.timePct)) +
-    '<p class="muted">Sundays and holidays are not counted.</p>' +
+    '<p class="muted">These numbers change automatically every day. If you type your own, they apply for today only.</p>' +
     '<h3>Remaining working dates</h3><div class="remaining-dates">' +
     (wi.remDates.length ? wi.remDates.map(escHtml).join("<br>") : '<span class="muted">None.</span>') + "</div>";
   $("working-body").innerHTML = html;
-  $("override-total").value = state.data.overrideTotal != null ? state.data.overrideTotal : "";
-  $("override-left").value = state.data.overrideLeft != null ? state.data.overrideLeft : "";
+  // The boxes always show the real current numbers (not placeholders) — but never overwrite while typing.
+  const boxT = $("override-total"), boxL = $("override-left");
+  if (document.activeElement !== boxT) boxT.value = wi.total;
+  if (document.activeElement !== boxL) boxL.value = wi.left;
   const hl = $("holiday-list");
   hl.innerHTML = "";
   (state.data.holidays || []).slice().sort().forEach((h) => {
@@ -1013,13 +1043,64 @@ function saveOverride() {
   const l = $("override-left").value.trim();
   if (t !== "" && !(Number(t) >= 0)) { showError("Total working days must be a number."); return; }
   if (l !== "" && !(Number(l) >= 0)) { showError("Working days left must be a number."); return; }
-  state.data.overrideTotal = t === "" ? null : Math.floor(Number(t));
-  state.data.overrideLeft = l === "" ? null : Math.floor(Number(l));
-  markDirty(); renderWorking(); renderDashboard(); toast("Override saved.");
+  const wi = workingInfo();
+  const total = t === "" ? wi.autoTotal : Math.floor(Number(t));
+  const left = l === "" ? wi.autoLeft : Math.floor(Number(l));
+  if (total === wi.autoTotal && left === wi.autoLeft) {
+    state.data.workOverride = null; // typed numbers equal the automatic ones: no override needed
+  } else {
+    state.data.workOverride = { date: todayStr(), total, left }; // applies for today only
+  }
+  markDirty(); renderWorking(); renderDashboard(); toast("Saved for today only.");
 }
 function clearOverride() {
-  state.data.overrideTotal = null; state.data.overrideLeft = null;
+  state.data.workOverride = null;
   markDirty(); renderWorking(); renderDashboard(); toast("Override cleared — back to automatic.");
+}
+
+/* ---- Month-end projection ---- */
+function renderProjection() {
+  const host = $("projection-body");
+  if (!state.data) return;
+  const wi = workingInfo();
+  const W_el = wi.elapsed;   // working days elapsed, including today
+  const W_left = wi.left;    // working days left, including today
+  const saleToday = state.data.products.some((p) => todayLogNet(p.name).net > 0);
+  let passed = Math.max(saleToday ? W_el : W_el - 1, 1);
+  let future = Math.max(saleToday ? W_left - 1 : W_left, 0);
+  const targeted = state.data.products.filter((p) => (Number(p.target) || 0) > 0);
+  if (!targeted.length) { host.innerHTML = '<span class="muted">Set targets to see the projection.</span>'; return; }
+  let totProj = 0, totTarget = 0, totInc = 0, rows = "", nextHtml = "";
+  targeted.forEach((p) => {
+    const s = productStats(p, wi);
+    const net = s.net, target = s.target;
+    const pace = Math.max(net, 0) / passed;
+    const proj = Math.round(net + pace * future);
+    const ach = target > 0 ? (proj / target) * 100 : 0;
+    const si = slabIndex(ach);
+    const rate = si >= 0 ? (Number(p.rates[si]) || 0) : 0;
+    const inc = proj * rate;
+    totProj += proj; totTarget += target; totInc += inc;
+    rows += "<tr><td>" + escHtml(p.name) + "</td><td>" + fmtNum(proj) + "</td><td>" + fmtPct(ach) +
+      "</td><td>" + escHtml(si >= 0 ? SLAB_LABELS[si] : "Below 86%") + "</td><td>" + fmtRs(inc) + "</td></tr>";
+    if (si >= 0 && si < SLAB_EDGES.length - 1) {
+      const need = Math.ceil(target * SLAB_EDGES[si + 1] / 100);
+      const extra = Math.max(need - net, 0);
+      const perDay = Math.ceil(extra / Math.max(future, 1));
+      const nextRate = Number(p.rates[si + 1]) || 0;
+      const extraInc = Math.max(need * nextRate - inc, 0);
+      nextHtml += escHtml(p.name) + ": slab " + escHtml(SLAB_LABELS[si + 1]) + " needs " + fmtNum(extra) +
+        " more packs (" + perDay + "/day, now " + pace.toFixed(1) + "/day), about " + fmtRs(extraInc) + " more incentive<br>";
+    }
+  });
+  const totAch = totTarget > 0 ? (totProj / totTarget) * 100 : 0;
+  host.innerHTML =
+    '<div class="kv"><span><b>Projected total</b></span><b>' + fmtNum(totProj) + " / " + fmtNum(totTarget) +
+    " (" + fmtPct(totAch) + ")</b></div>" +
+    kv("Projected incentive", "<b>" + fmtRs(totInc) + "</b>") +
+    '<p class="muted">Pace = net sale / ' + passed + ' working days passed. Working days still to come: ' + future + ".</p>" +
+    '<table class="data"><tr><th>Product</th><th>Proj.</th><th>%</th><th>Slab</th><th>Rs</th></tr>' + rows + "</table>" +
+    (nextHtml ? '<h3>To reach the next slab:</h3><div class="remaining-dates">' + nextHtml + "</div>" : "");
 }
 
 /* ---- Incentive tab ---- */
@@ -1049,7 +1130,7 @@ function renderIncentive() {
       const inp = $("rate-" + idx + "-" + si);
       if (inp) inp.addEventListener("change", (e) => {
         p.rates[si] = Math.max(0, Number(e.target.value) || 0);
-        markDirty(); renderIncentive();
+        markDirty(); renderProjection(); renderIncentive();
       });
     });
   });
@@ -1158,6 +1239,7 @@ function startNewMonth() {
     id: uid(),
     month: monthLabel(wi.year, wi.month),
     archivedAt: todayStr(),
+    workingDays: wi.total,
     totals: { target: o.target, sale: o.sale, ret: o.ret, achievement: o.achievement, incentive: o.incentive, saleValue: o.saleValue },
     products: state.data.products.map((p) => {
       const s = productStats(p, wi);
@@ -1168,7 +1250,7 @@ function startNewMonth() {
   state.data.salesLog = [];
   state.data.products.forEach((p) => { p.tillSale = 0; p.tillReturn = 0; });
   state.data.holidays = [];
-  state.data.overrideTotal = null; state.data.overrideLeft = null;
+  state.data.workOverride = null;
   markDirty(); renderAll(); switchTab("tab-history");
   toast("New month started. Previous month archived.");
 }
@@ -1184,7 +1266,8 @@ function renderHistory() {
     sum.textContent = h.month + " — " + fmtNum(h.totals.sale) + "/" + fmtNum(h.totals.target) +
       " (" + fmtPct(h.totals.achievement) + "), " + fmtRs(h.totals.incentive);
     det.appendChild(sum);
-    let html = '<table class="data"><tr><th>Product</th><th>Target</th><th>Net</th><th>Ach.%</th><th>Incentive</th></tr>';
+    let html = (h.workingDays != null ? kv("Working days", fmtNum(h.workingDays)) : "") +
+      '<table class="data"><tr><th>Product</th><th>Target</th><th>Net</th><th>Ach.%</th><th>Incentive</th></tr>';
     (h.products || []).forEach((p) => {
       html += "<tr><td>" + escHtml(p.name) + "</td><td>" + fmtNum(p.target) + "</td><td>" + fmtNum(p.net) +
         "</td><td>" + fmtPct(p.achievement) + "</td><td>" + fmtRs(p.incentive) + "</td></tr>";
@@ -1290,7 +1373,7 @@ function renderOcrSalesPreview() {
       '<td><input id="ocrs-m-' + i + '" type="number" min="0" step="1" value="' + r.mtd + '"></td>' +
       '<td><input id="ocrs-r-' + i + '" type="number" min="0" step="1" value="' + r.ret + '"></td></tr>';
   });
-  host.innerHTML = html + "</table><p class='muted'>Review the values — you can edit before applying.</p>";
+  host.innerHTML = html + "</table><p class='muted'>Check the numbers — you can edit before applying.</p>";
   $("btn-apply-ocr-sales").disabled = false;
 }
 function readOcrSalesPreview() {
@@ -1311,7 +1394,7 @@ function renderOcrTargetPreview() {
     html += "<tr><td>" + escHtml(r.product) + "</td><td>" + fmtNum(cur) + "</td>" +
       '<td><input id="ocrt-' + i + '" type="number" min="0" step="1" value="' + r.target + '"></td></tr>';
   });
-  host.innerHTML = html + "</table><p class='muted'>Review the values — you can edit before applying.</p>";
+  host.innerHTML = html + "</table><p class='muted'>Check the numbers — you can edit before applying.</p>";
   $("btn-apply-ocr-targets").disabled = false;
 }
 function applyOcrSales() {
@@ -1332,7 +1415,9 @@ function applyOcrSales() {
     p.tillReturn = Math.max(0, r.ret);
   });
   markDirty(); renderDashboard();
-  toast("Sales report applied for " + rdate);
+  toast("Applied for " + rdate + ".");
+  reportDateManual = false; // back to today from now on
+  refreshReportDate();
 }
 function applyOcrTargets() {
   clearError();
@@ -1361,7 +1446,7 @@ async function handleSalesOcr() {
     ocrSalesRows = parseSalesOCR(text);
     renderOcrSalesPreview();
     statusEl.textContent = ocrSalesRows.length
-      ? "Found " + ocrSalesRows.length + " product rows. Review and Apply."
+      ? "Found " + ocrSalesRows.length + " of " + (state.data ? state.data.products.length : 0) + " products. Check the numbers, then tap Apply."
       : "No product rows found. Try a clearer image.";
   } catch (e) { statusEl.textContent = ""; showError("OCR failed: " + (e.message || e)); }
 }
@@ -1382,7 +1467,7 @@ async function handleTargetOcr() {
     ocrTargetRows = parseTargetOCR(allText);
     renderOcrTargetPreview();
     statusEl.textContent = ocrTargetRows.length
-      ? "Found " + ocrTargetRows.length + " product rows. Review and Apply Targets."
+      ? "Found " + ocrTargetRows.length + " of " + (state.data ? state.data.products.length : 0) + " targets. Check the numbers, then tap Apply."
       : "No product rows found. Try clearer images.";
   } catch (e) { statusEl.textContent = ""; showError("OCR failed: " + (e.message || e)); }
 }
@@ -1490,6 +1575,7 @@ function wireUI() {
   });
   $("ocr-sales-file").addEventListener("change", handleSalesOcr);
   $("ocr-target-file").addEventListener("change", handleTargetOcr);
+  $("ocr-report-date").addEventListener("change", () => { reportDateManual = true; });
   $("btn-apply-ocr-sales").addEventListener("click", applyOcrSales);
   $("btn-apply-ocr-targets").addEventListener("click", applyOcrTargets);
   $("btn-load-team").addEventListener("click", loadTeam);
@@ -1502,6 +1588,7 @@ async function init() {
   wireAuth();
   wireUI();
   $("ocr-report-date").value = todayStr();
+  reportDateManual = false;
   if ("serviceWorker" in navigator && /^https?:/.test(window.location.protocol)) {
     navigator.serviceWorker.register("./sw.js").catch((e) => console.warn("SW register failed:", e));
   }
