@@ -1311,8 +1311,10 @@ function matchTargetProduct(up) {
   }
   if (up.indexOf("KESTINE") >= 0) {
     if (up.indexOf("LIQUID") >= 0) return "Kestine Liquid 60ml";
-    if (up.indexOf("10") >= 0) return "Kestine Tablets 10";
-    if (up.indexOf("20") >= 0) return "Kestine 20mg";
+    if (/20\s?MG/.test(up)) return "Kestine 20mg";
+    if (/10\s?MG/.test(up) && /20['\u2019]?S/.test(up)) return null; // 10MG 20'S pack: ambiguous, skipped
+    if (/10/.test(up)) return "Kestine Tablets 10";
+    if (/20/.test(up)) return "Kestine 20mg";
     return null;
   }
   return null;
@@ -1344,22 +1346,39 @@ function parseSalesOCR(text) {
   return Object.keys(merged).map((k) => merged[k]);
 }
 
-/* ---- OCR: target report parsing ---- TARGET = LAST number in the row. */
+/* ---- OCR: target report parsing ----
+   Report layouts (SKU Performance / Brand Performance):
+     PRD.DESC | SALES | TARGET | ACH%
+   Strategy: split each line into tokens; the first purely-numeric token starts the
+   data columns. Target = 2nd data number (SALES, TARGET, [ACH%]). Falls back to the
+   1st data number for single-number rows. Brand-total rows and unmatched SKUs are
+   reported as skipped, not silently dropped. */
+let ocrTargetSkipped = [];
 function parseTargetOCR(text) {
   const merged = {};
+  const skipped = [];
   text.split("\n").forEach((line) => {
     const up = line.toUpperCase();
-    const nums = line.match(/-?[\d,]+/g);
-    if (!nums || !nums.length) return;
-    const firstIdx = line.search(/-?[\d,]+/);
-    const namePart = up.slice(0, firstIdx).replace(/[^A-Z]/g, "");
-    if (["KESTINE", "IPRAVAIR", "BENNIVAIR", "COMBIVAIR"].indexOf(namePart) >= 0) return; // brand-total row
-    const name = matchTargetProduct(up);
-    if (!name) return;
-    const target = Number(nums[nums.length - 1].replace(/,/g, ""));
+    if (/GROUP TOTAL|TOTAL SUMMARY/.test(up)) return;
+    const tokens = line.trim().split(/\s+/);
+    if (!tokens.length || !tokens[0]) return;
+    let di = -1;
+    for (let i = 0; i < tokens.length; i++) {
+      if (/^-?[\d,]+(\.\d+)?%?$/.test(tokens[i])) { di = i; break; }
+    }
+    if (di < 0) return; // header or text-only line
+    const nameTokens = tokens.slice(0, di);
+    const dataTokens = tokens.slice(di).map((t) => t.replace(/,/g, "").replace(/%$/, ""));
+    if (!dataTokens.length) return;
+    const target = Number(dataTokens.length >= 2 ? dataTokens[1] : dataTokens[0]);
     if (!(target >= 0)) return;
+    const namePart = nameTokens.join(" ").toUpperCase().replace(/[^A-Z]/g, "");
+    if (["KESTINE", "IPRAVAIR", "BENNIVAIR"].indexOf(namePart) >= 0) return; // brand-total row
+    const name = matchTargetProduct(nameTokens.join(" ").toUpperCase());
+    if (!name) { skipped.push(nameTokens.join(" ")); return; }
     merged[name] = { product: name, target: target };
   });
+  ocrTargetSkipped = skipped;
   return Object.keys(merged).map((k) => merged[k]);
 }
 
@@ -1394,7 +1413,11 @@ function renderOcrTargetPreview() {
     html += "<tr><td>" + escHtml(r.product) + "</td><td>" + fmtNum(cur) + "</td>" +
       '<td><input id="ocrt-' + i + '" type="number" min="0" step="1" value="' + r.target + '"></td></tr>';
   });
-  host.innerHTML = html + "</table><p class='muted'>Check the numbers — you can edit before applying.</p>";
+  html += "</table><p class='muted'>Check the numbers — you can edit before applying.</p>";
+  if (ocrTargetSkipped.length) {
+    html += "<p class='muted'>Not matched (skipped): " + escHtml(ocrTargetSkipped.join(", ")) + ".</p>";
+  }
+  host.innerHTML = html;
   $("btn-apply-ocr-targets").disabled = false;
 }
 function applyOcrSales() {
@@ -1467,7 +1490,8 @@ async function handleTargetOcr() {
     ocrTargetRows = parseTargetOCR(allText);
     renderOcrTargetPreview();
     statusEl.textContent = ocrTargetRows.length
-      ? "Found " + ocrTargetRows.length + " of " + (state.data ? state.data.products.length : 0) + " targets. Check the numbers, then tap Apply."
+      ? "Found " + ocrTargetRows.length + " of " + (state.data ? state.data.products.length : 0) + " targets. Check the numbers, then tap Apply." +
+        (ocrTargetSkipped.length ? " Skipped: " + ocrTargetSkipped.join(", ") + "." : "")
       : "No product rows found. Try clearer images.";
   } catch (e) { statusEl.textContent = ""; showError("OCR failed: " + (e.message || e)); }
 }
