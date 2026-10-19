@@ -383,12 +383,30 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
 
     <section id="tab-manager" hidden>
       <div class="card">
-        <h2>Team Overview</h2>
-        <button id="btn-load-team" type="button" style="width:100%">Load Team</button>
-        <div class="row" style="margin-top:.6rem">
-          <button id="btn-team-excel" type="button" class="ghost" style="flex:1" disabled>Download Team Excel</button>
+        <h2 data-i18n="teamEntry">Team Sales Entry</h2>
+        <p class="muted" data-i18n="teamEntryHint">Teeno members ki sale ek saath likho, phir Save dabao.</p>
+        <div class="row">
+          <div style="flex:1">
+            <label class="f" for="team-date" data-i18n="date">Date</label>
+            <input id="team-date" type="date">
+          </div>
         </div>
-        <div id="team-body" style="margin-top:.6rem"></div>
+        <div id="team-entry-table" style="margin-top:.6rem"></div>
+        <div class="row" style="margin-top:.6rem">
+          <button id="btn-team-save" type="button" style="flex:1" data-i18n="save">Save</button>
+        </div>
+        <div id="team-save-summary" style="margin-top:.6rem"></div>
+      </div>
+      <div class="card">
+        <h2 data-i18n="teamOverview">Team Overview</h2>
+        <div id="team-overview"></div>
+      </div>
+      <div class="card" id="team-member-card" hidden>
+        <h2 id="team-member-title"></h2>
+        <div id="team-member-body"></div>
+        <div class="row" style="margin-top:.6rem">
+          <button id="btn-team-back" type="button" class="ghost" data-i18n="back">Back</button>
+        </div>
       </div>
     </section>
   </div>
@@ -458,7 +476,7 @@ en: {
   projected: "Projected", pace: "Pace/day", needMore: "more needed", perDay: "/day",
   extra: "extra", nextSlab: "Next slab", noData: "No data yet.", confirmClear: "Clear all sales for this product?",
   confirmRemove: "Remove this product?", shareText: "Share", downloadExcel: "Download Excel",
-  saveMonth: "Save month", month: "Month", year: "Year", loadTeam: "Load Team",
+  saveMonth: "Save month", month: "Month", year: "Year",
   screenshot: "Screenshot", screenshots: "Screenshots", reportDate: "Report date",
   uploadHintSales: "Upload the report image, check the numbers, then Apply.",
   uploadHintTargets: "Upload the target image(s), check the numbers, then Apply.",
@@ -472,7 +490,11 @@ en: {
   receipt: "Receipt", print: "Print", totalSale: "Total sale", totalReturn: "Total return",
   slab: "Slab", rate: "Rate", incentiveCol: "Incentive", achievedCol: "Achieved",
   advice: "Advice", overallProgress: "Overall progress", toReach: "to reach",
-  qHelp: "Samajh nahi aaya. Ye puch sakte ho: mera incentive kitna hai? | aaj ki sale? | target? | projection? | working days?"
+  qHelp: "Samajh nahi aaya. Ye puch sakte ho: mera incentive kitna hai? | aaj ki sale? | target? | projection? | working days?",
+  teamEntry: "Team Sales Entry", teamEntryHint: "Teeno members ki sale ek saath likho, phir Save dabao.",
+  teamOverview: "Team Overview", back: "Back", savedFor: "Saved for",
+  grossTotal: "Total sale", deduction: "deduction", netTotal: "Net sale",
+  noEntries: "Enter at least one quantity."
 },
 ur: {
   appName: "سیلز ٹریکر", dashboard: "ڈیش بورڈ", working: "کام کے دن", incentive: "انسینٹیو",
@@ -501,7 +523,7 @@ ur: {
   projected: "متوقع", pace: "روز کی رفتار", needMore: "مزید درکار", perDay: "روزانہ",
   extra: "اضافی", nextSlab: "اگلا سلیب", noData: "ابھی کوئی ڈیٹا نہیں۔", confirmClear: "اس پروڈکٹ کی ساری فروخت صاف کر دوں؟",
   confirmRemove: "یہ پروڈکٹ ہٹا دوں؟", shareText: "شیئر", downloadExcel: "ایکسل ڈاؤن لوڈ",
-  saveMonth: "مہینہ محفوظ کریں", month: "مہینہ", year: "سال", loadTeam: "ٹیم لوڈ کریں",
+  saveMonth: "مہینہ محفوظ کریں", month: "مہینہ", year: "سال",
   screenshot: "اسکرین شاٹ", screenshots: "اسکرین شاٹس", reportDate: "رپورٹ کی تاریخ",
   uploadHintSales: "رپورٹ کی تصویر اپ لوڈ کرو، نمبر چیک کرو، پھر اپلائی دباؤ۔",
   uploadHintTargets: "ٹارگٹ کی تصویریں اپ لوڈ کرو، نمبر چیک کرو، پھر اپلائی دباؤ۔",
@@ -515,7 +537,11 @@ ur: {
   receipt: "رسید", print: "پرنٹ", totalSale: "کل فروخت", totalReturn: "کل واپسی",
   slab: "سلیب", rate: "ریٹ", incentiveCol: "انسینٹیو", achievedCol: "حاصل شدہ",
   advice: "مشورہ", overallProgress: "مجموعی پیش رفت", toReach: "حاصل کرنے کے لیے",
-  qHelp: "سمجھ نہیں آیا۔ یہ پوچھ سکتے ہو: میرا انسینٹیو کتنا ہے؟ | آج کی سیل؟ | ٹارگٹ؟ | تخمینہ؟ | کام کے دن؟"
+  qHelp: "سمجھ نہیں آیا۔ یہ پوچھ سکتے ہو: میرا انسینٹیو کتنا ہے؟ | آج کی سیل؟ | ٹارگٹ؟ | تخمینہ؟ | کام کے دن؟",
+  teamEntry: "ٹیم سیل انٹری", teamEntryHint: "تینوں ممبرز کی سیل ایک ساتھ لکھو، پھر سیو دباؤ۔",
+  teamOverview: "ٹیم کا جائزہ", back: "واپس", savedFor: "محفوظ ہو گیا",
+  grossTotal: "کل سیل", deduction: "کٹوتی", netTotal: "خالص سیل",
+  noEntries: "کم از کم ایک مقدار لکھو۔"
 }
 };
 let lang = "en";
@@ -654,6 +680,11 @@ function ensureDefaults(data) {
   if (!Array.isArray(data.salesLog)) data.salesLog = [];
   if (!Array.isArray(data.holidays)) data.holidays = [];
   if (!Array.isArray(data.history)) data.history = [];
+  if (!Array.isArray(data.teamMembers) || !data.teamMembers.length) {
+    data.teamMembers = TEAM_DEFAULTS.map((m) => ({ name: m.name, email: m.email }));
+  }
+  if (!Array.isArray(data.teamLog)) data.teamLog = [];
+  if (!data.teamTargets || typeof data.teamTargets !== "object") data.teamTargets = {};
   // Silently drop legacy working-day override fields (replaced by the dated workOverride).
   delete data.wt; delete data.wl;
   delete data.overrideTotal; delete data.overrideLeft;
@@ -789,6 +820,7 @@ function switchTab(tabId) {
   if (tabId === "tab-dashboard") renderDashboard();
   if (tabId === "tab-upload") refreshReportDate();
   if (tabId === "tab-coach") renderCoach();
+  if (tabId === "tab-manager") renderTeam();
 }
 
 /* ---- Auth ---- */
@@ -939,6 +971,7 @@ async function checkManager() {
     const { data, error } = await sb.from("managers").select("user_id").eq("user_id", state.user.id).maybeSingle();
     if (!error && data) state.isManager = true;
   } catch (e) { console.warn("manager check failed:", e.message || e); }
+  if (state.user && state.user.email && state.user.email.toLowerCase() === MANAGER_EMAIL) state.isManager = true;
   $("tabbtn-manager").hidden = !state.isManager;
 }
 
@@ -1817,86 +1850,148 @@ async function handleTargetOcr() {
   } catch (e) { statusEl.textContent = ""; showError("OCR failed: " + (e.message || e)); }
 }
 
-/* ---- Manager view ---- */
-let teamSummaries = [];
-function memberSummary(memberData) {
-  const saved = state.data;
-  try {
-    state.data = ensureDefaults(JSON.parse(JSON.stringify(memberData)));
-    const wi = workingInfo();
-    const o = overallStats(wi);
-    const products = state.data.products.map((p) => {
-      const s = productStats(p, wi);
-      return { name: p.name, target: s.target, net: s.net, achievement: s.achievement, incentive: s.incentive };
-    });
-    return { email: state.data.email || "(no email)", sale: o.sale, target: o.target, ret: o.ret,
-             achievement: o.achievement, timePct: wi.timePct, incentive: o.incentive, products };
-  } finally {
-    state.data = saved;
+/* ================= MANAGER: team roster, bulk entry, overview ================= */
+const MANAGER_EMAIL = "mubasherustb@gmail.com";
+const TEAM_DEFAULTS = [
+  { name: "Salman Zia", email: "salman.zia@gmail.com" },
+  { name: "Rezwan Ullah", email: "rezwan.ullah@gmail.com" },
+  { name: "Mubasher Fayaz", email: "mubasherustb@gmail.com" }
+];
+const TEAM_DEDUCT_PCT = 8;
+
+function teamMembers() {
+  if (!state.data) return [];
+  if (!Array.isArray(state.data.teamMembers) || !state.data.teamMembers.length) {
+    state.data.teamMembers = TEAM_DEFAULTS.map((m) => ({ name: m.name, email: m.email }));
   }
+  return state.data.teamMembers;
 }
-async function loadTeam() {
-  clearError();
-  const btn = $("btn-load-team");
-  btn.disabled = true; btn.textContent = "Loading…";
-  try {
-    const sb = getClient();
-    const { data: rows, error } = await sb.from("user_data").select("data");
-    if (error) throw error;
-    teamSummaries = (rows || []).map((r) => r.data).filter(Boolean).map(memberSummary);
-    teamSummaries.sort((a, b) => String(a.email).localeCompare(String(b.email)));
-    renderTeam();
-    $("btn-team-excel").disabled = !teamSummaries.length;
-    toast("Team loaded: " + teamSummaries.length + " member(s).");
-  } catch (e) { showError("Could not load team: " + (e.message || e)); }
-  btn.disabled = false; btn.textContent = "Load Team";
-}
-function renderTeam() {
-  const host = $("team-body");
-  host.innerHTML = "";
-  if (!teamSummaries.length) { host.innerHTML = '<span class="muted">No team data.</span>'; return; }
-  let tSale = 0, tTarget = 0, tInc = 0;
-  teamSummaries.forEach((m) => {
-    tSale += m.sale; tTarget += m.target; tInc += m.incentive;
-    const det = document.createElement("details");
-    const sum = document.createElement("summary");
-    sum.textContent = m.email + " — " + fmtNum(m.sale) + "/" + fmtNum(m.target) +
-      " (" + fmtPct(m.achievement) + "), " + fmtRs(m.incentive);
-    det.appendChild(sum);
-    const div = document.createElement("div");
-    let html = kv("Time elapsed", fmtPct(m.timePct)) + kv("Return", fmtNum(m.ret) + " packs") +
-      '<table class="data"><tr><th>Product</th><th>Target</th><th>Net</th><th>Ach.%</th><th>Incentive</th></tr>';
-    m.products.forEach((p) => {
-      html += "<tr><td>" + escHtml(p.name) + "</td><td>" + fmtNum(p.target) + "</td><td>" + fmtNum(p.net) +
-        "</td><td>" + fmtPct(p.achievement) + "</td><td>" + fmtRs(p.incentive) + "</td></tr>";
-    });
-    div.innerHTML = html + "</table>";
-    det.appendChild(div);
-    host.appendChild(det);
+function teamSalesByProduct(member) {
+  const map = {};
+  (state.data.teamLog || []).forEach((e) => {
+    if (e.member === member) map[e.product] = (map[e.product] || 0) + (Number(e.qty) || 0);
   });
-  const tAch = tTarget > 0 ? (tSale / tTarget) * 100 : 0;
-  const tot = document.createElement("div");
-  tot.className = "card";
-  tot.innerHTML = "<h3>Team totals</h3>" + kv("Total sale / target", fmtNum(tSale) + " / " + fmtNum(tTarget)) +
-    kv("Team achievement", fmtPct(tAch)) + kv("Total incentive", fmtRs(tInc));
-  host.appendChild(tot);
+  return map;
 }
-function exportTeamExcel() {
+function teamTargetOf(member, product) {
+  const tt = state.data.teamTargets || {};
+  return tt[member] ? (Number(tt[member][product]) || 0) : 0;
+}
+/* Per-member stats, reusing the personal-stats engine on synthetic products. */
+function teamMemberStats(member, wi) {
+  const sales = teamSalesByProduct(member);
+  const prods = state.data.products.map((p) => {
+    const sp = { name: p.name, target: teamTargetOf(member, p.name), price: p.price,
+                 rates: p.rates, tillSale: sales[p.name] || 0, tillReturn: 0 };
+    return { def: p, s: productStats(sp, wi) };
+  });
+  const tot = { sale: 0, target: 0, incentive: 0 };
+  prods.forEach((r) => { tot.sale += r.s.net; tot.target += r.s.target; tot.incentive += r.s.incentive; });
+  tot.achievement = tot.target > 0 ? (tot.sale / tot.target) * 100 : 0;
+  return { prods, tot };
+}
+function renderTeamEntry() {
+  if (!state.data) return;
+  const members = teamMembers();
+  const d = $("team-date");
+  if (d && !d.value) d.value = todayStr();
+  let html = '<table class="data"><tr><th>' + escHtml(t("product")) + '</th>' +
+    members.map((m) => "<th>" + escHtml(m.name) + "</th>").join("") + "</tr>";
+  state.data.products.forEach((p, pi) => {
+    html += "<tr><td>" + escHtml(p.name) + "</td>" + members.map((m, mi) =>
+      '<td><input id="tm-' + mi + '-' + pi + '" type="number" min="0" step="1" placeholder="0" style="width:64px"></td>'
+    ).join("") + "</tr>";
+  });
+  $("team-entry-table").innerHTML = html + "</table>";
+}
+function saveTeamEntries() {
   clearError();
   try {
-    if (typeof XLSX === "undefined") throw new Error("Excel library not loaded");
-    const rows = [];
-    teamSummaries.forEach((m) => {
-      m.products.forEach((p) => {
-        rows.push({ Member: m.email, Product: p.name, Target: p.target, "Net sale": p.net,
-          "Ach.%": Number(p.achievement.toFixed(1)), "Incentive (Rs)": Number(p.incentive.toFixed(2)) });
+    if (!state.data) { showError("Data not loaded."); return; }
+    const members = teamMembers();
+    const date = ($("team-date").value || todayStr());
+    if (!parseDate(date)) { showError("Pick a valid date."); return; }
+    let n = 0;
+    const perMember = members.map(() => 0);
+    state.data.products.forEach((p, pi) => {
+      members.forEach((m, mi) => {
+        const el = $("tm-" + mi + "-" + pi);
+        const q = Math.max(0, Math.floor(Number(el && el.value) || 0));
+        if (q > 0) {
+          state.data.teamLog.push({ id: uid(), date: date, member: m.name, product: p.name, qty: q });
+          perMember[mi] += q; n++;
+        }
       });
     });
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Team");
-    XLSX.writeFile(wb, "team-" + todayStr() + ".xlsx");
-    toast("Team Excel downloaded.");
-  } catch (e) { showError("Team export failed: " + (e.message || e)); }
+    if (!n) { showError(t("noEntries")); return; }
+    markDirty();
+    renderTeamEntry(); renderTeamOverview();
+    const gross = perMember.reduce((a, b) => a + b, 0);
+    const ded = Math.round(gross * TEAM_DEDUCT_PCT) / 100;
+    const net = Math.round((gross - ded) * 100) / 100;
+    let html = '<div class="today-box"><b>' + escHtml(t("savedFor")) + " " + escHtml(date) + "</b><br>";
+    members.forEach((m, mi) => { html += escHtml(m.name) + ": " + perMember[mi] + " packs<br>"; });
+    html += "<b>" + escHtml(t("grossTotal")) + ": " + gross + " &nbsp;|&nbsp; " +
+      TEAM_DEDUCT_PCT + "% " + escHtml(t("deduction")) + ": &minus;" + ded + " &nbsp;|&nbsp; " +
+      escHtml(t("netTotal")) + ": " + net + "</b></div>";
+    $("team-save-summary").innerHTML = html;
+    toast(t("appliedFor") + date + ".");
+  } catch (e) { showError("Save failed: " + (e && e.message || e)); }
+}
+function renderTeamOverview() {
+  if (!state.data) return;
+  const wi = workingInfo();
+  const members = teamMembers();
+  let html = "", gSale = 0, gTarget = 0, gInc = 0;
+  members.forEach((m) => {
+    const st = teamMemberStats(m.name, wi);
+    gSale += st.tot.sale; gTarget += st.tot.target; gInc += st.tot.incentive;
+    html += '<div class="today-box" style="cursor:pointer" data-member="' + escHtml(m.name) + '">' +
+      "<b>" + escHtml(m.name) + "</b><br>" +
+      '<span class="muted">' + st.tot.sale + "/" + st.tot.target + " (" + Math.round(st.tot.achievement) + "%) &middot; " +
+      fmtRs(st.tot.incentive) + "</span></div>";
+  });
+  const ded = Math.round(gSale * TEAM_DEDUCT_PCT) / 100;
+  html += '<div class="kv"><span><b>' + escHtml(t("grossTotal")) + "</b></span><b>" + gSale + " packs</b></div>" +
+    '<div class="kv"><span>' + TEAM_DEDUCT_PCT + "% " + escHtml(t("deduction")) + "</span><b>&minus;" + ded + "</b></div>" +
+    '<div class="kv"><span><b>' + escHtml(t("netTotal")) + "</b></span><b>" + (Math.round((gSale - ded) * 100) / 100) + " packs</b></div>";
+  const host = $("team-overview");
+  host.innerHTML = html;
+  host.querySelectorAll("[data-member]").forEach((el) => {
+    el.addEventListener("click", () => showTeamMember(el.getAttribute("data-member")));
+  });
+}
+function showTeamMember(name) {
+  if (!state.data) return;
+  const wi = workingInfo();
+  const st = teamMemberStats(name, wi);
+  $("team-member-title").textContent = name;
+  let html = '<table class="data"><tr><th>' + escHtml(t("product")) + "</th><th>" + escHtml(t("target")) +
+    "</th><th>" + escHtml(t("achievedCol")) + "</th><th>" + escHtml(t("incentiveCol")) + "</th></tr>";
+  st.prods.forEach((r) => {
+    html += "<tr><td>" + escHtml(r.def.name) + "</td>" +
+      '<td><input data-tm="' + escHtml(name) + '" data-tp="' + escHtml(r.def.name) + '" type="number" min="0" step="1" value="' +
+      teamTargetOf(name, r.def.name) + '" style="width:64px" class="team-target-input"></td>' +
+      "<td>" + r.s.net + " (" + Math.round(r.s.achievement) + "%)</td>" +
+      "<td>" + fmtRs(r.s.incentive) + "</td></tr>";
+  });
+  $("team-member-body").innerHTML = html + "</table>";
+  $("team-member-body").querySelectorAll(".team-target-input").forEach((el) => {
+    el.addEventListener("change", () => {
+      const mn = el.getAttribute("data-tm"), pn = el.getAttribute("data-tp");
+      const v = Math.max(0, Math.floor(Number(el.value) || 0));
+      if (!state.data.teamTargets[mn]) state.data.teamTargets[mn] = {};
+      state.data.teamTargets[mn][pn] = v;
+      markDirty(); showTeamMember(mn); renderTeamOverview();
+    });
+  });
+  $("team-member-card").hidden = false;
+}
+function renderTeam() {
+  renderTeamEntry();
+  renderTeamOverview();
+  $("team-member-card").hidden = true;
+  $("team-save-summary").innerHTML = "";
 }
 
 /* ---- UI wiring ---- */
@@ -2164,8 +2259,8 @@ function wireUI() {
   $("btn-ask").addEventListener("click", answerQuestion);
   $("ask-input").addEventListener("keydown", (e) => { if (e.key === "Enter") answerQuestion(); });
   $("btn-lang").addEventListener("click", () => setLang(lang === "ur" ? "en" : "ur"));
-  $("btn-load-team").addEventListener("click", loadTeam);
-  $("btn-team-excel").addEventListener("click", exportTeamExcel);
+  $("btn-team-save").addEventListener("click", saveTeamEntries);
+  $("btn-team-back").addEventListener("click", () => { $("team-member-card").hidden = true; });
 }
 
 /* ---- Init ---- */
