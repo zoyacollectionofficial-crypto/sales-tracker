@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Sales Tracker</title>
+<meta name="description" content="Daily sales tracker for medical representatives — targets, returns, working days and incentives.">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0f766e">
+<link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+<link rel="apple-touch-icon" href="./icons/icon.svg">
+<style>
+:root{
+  --bg:#f1f5f9; --card:#ffffff; --text:#0f172a; --muted:#64748b;
+  --border:#e2e8f0; --accent:#0f766e; --accent-soft:#ccfbf1;
+  --danger:#dc2626; --danger-soft:#fee2e2; --warn:#d97706;
+  --ok:#15803d; --ok-soft:#dcfce7; --bar-bg:#e2e8f0;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+html[data-theme="dark"]{
+  --bg:#0b1220; --card:#111c30; --text:#e2e8f0; --muted:#94a3b8;
+  --border:#1e2d4d; --accent:#2dd4bf; --accent-soft:#134e4a;
+  --danger:#f87171; --danger-soft:#450a0a; --warn:#fbbf24;
+  --ok:#4ade80; --ok-soft:#14532d; --bar-bg:#1e2d4d;
+  --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg); color:var(--text); font-size:15px; line-height:1.45;}
+header.topbar{position:sticky; top:0; z-index:20; background:var(--card);
+  border-bottom:1px solid var(--border); padding:.6rem .9rem;
+  display:flex; align-items:center; gap:.6rem; box-shadow:var(--shadow);}
+header.topbar h1{font-size:1.05rem; margin:0; flex:1;}
+.wrap{max-width:760px; margin:0 auto; padding:.8rem .8rem 5.5rem;}
+.card{background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:.9rem; margin-bottom:.8rem; box-shadow:var(--shadow);}
+.card h2{font-size:1rem; margin:0 0 .6rem;}
+.card h3{font-size:.92rem; margin:.6rem 0 .4rem;}
+.muted{color:var(--muted); font-size:.82rem;}
+.row{display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:.5rem;}
+.kv{display:flex; justify-content:space-between; padding:.18rem 0; font-size:.9rem;}
+.kv b{font-variant-numeric:tabular-nums;}
+label.f{display:block; font-size:.8rem; color:var(--muted); margin:.45rem 0 .2rem;}
+input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],select{
+  width:100%; padding:.55rem .6rem; border:1px solid var(--border); border-radius:10px;
+  background:var(--bg); color:var(--text); font-size:.95rem;}
+input:focus,select:focus{outline:2px solid var(--accent); border-color:var(--accent);}
+button{border:0; border-radius:10px; padding:.6rem .9rem; font-size:.92rem; cursor:pointer;
+  background:var(--accent); color:#fff; font-weight:600;}
+button.ghost{background:var(--bar-bg); color:var(--text);}
+button.danger{background:var(--danger);}
+button.small{padding:.35rem .6rem; font-size:.8rem;}
+button:disabled{opacity:.55; cursor:default;}
+.bar{height:10px; background:var(--bar-bg); border-radius:99px; overflow:hidden; margin:.25rem 0 .5rem;}
+.bar>div{height:100%; border-radius:99px; transition:width .3s;}
+.bar-ach{background:linear-gradient(90deg,#0d9488,#2dd4bf);}
+.bar-time{background:linear-gradient(90deg,#d97706,#fbbf24);}
+.pill{display:inline-block; padding:.25rem .7rem; border-radius:99px; font-size:.78rem; font-weight:700;}
+.pill.ok{background:var(--ok-soft); color:var(--ok);}
+.pill.warn{background:#fef3c7; color:#92400e;}
+html[data-theme="dark"] .pill.warn{background:#451a03; color:#fbbf24;}
+.pill.bad{background:var(--danger-soft); color:var(--danger);}
+#sync-pill{font-size:.75rem;}
+nav.tabs{position:fixed; bottom:0; left:0; right:0; z-index:20; background:var(--card);
+  border-top:1px solid var(--border); display:flex; overflow-x:auto;}
+nav.tabs button{flex:1; min-width:64px; background:none; color:var(--muted); border-radius:0;
+  padding:.55rem .2rem; font-size:.68rem; font-weight:600; border-top:3px solid transparent;}
+nav.tabs button.active{color:var(--accent); border-top-color:var(--accent);}
+#error-box{display:none; background:var(--danger-soft); color:var(--danger);
+  border:1px solid var(--danger); border-radius:10px; padding:.6rem .8rem; margin-bottom:.8rem; font-size:.88rem;}
+#toast{position:fixed; left:50%; transform:translateX(-50%); bottom:4.6rem; z-index:50;
+  background:#0f172a; color:#fff; padding:.6rem 1rem; border-radius:10px; font-size:.85rem;
+  display:none; max-width:92vw; box-shadow:0 4px 16px rgba(0,0,0,.3);}
+table.data{width:100%; border-collapse:collapse; font-size:.82rem;}
+table.data th,table.data td{border:1px solid var(--border); padding:.35rem .4rem; text-align:left;}
+table.data th{background:var(--bar-bg); font-size:.75rem;}
+.log-item{display:flex; gap:.5rem; align-items:center; padding:.45rem 0; border-bottom:1px solid var(--border); font-size:.85rem;}
+.log-item:last-child{border-bottom:0;}
+.badge{font-size:.7rem; font-weight:700; padding:.15rem .5rem; border-radius:99px;}
+.badge.sale{background:var(--ok-soft); color:var(--ok);}
+.badge.return{background:var(--danger-soft); color:var(--danger);}
+details{border:1px solid var(--border); border-radius:10px; padding:.5rem .7rem; margin:.5rem 0;}
+details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
+.prod-head{display:flex; align-items:center; justify-content:space-between; gap:.5rem;}
+.prod-head h3{margin:0; font-size:.98rem;}
+.today-box{background:var(--accent-soft); border-radius:10px; padding:.5rem .7rem; margin:.5rem 0; font-size:.88rem;}
+.auth-card{max-width:420px; margin:4rem auto 0;}
+.linklike{background:none; color:var(--accent); padding:.3rem; font-size:.85rem; text-decoration:underline;}
+#screen-receipt-print{display:none;}
+@media print{
+  body>*{display:none !important;}
+  #screen-receipt-print{display:block !important; color:#000;}
+  #screen-receipt-print table{width:100%; border-collapse:collapse;}
+  #screen-receipt-print th,#screen-receipt-print td{border:1px solid #000; padding:4px 6px; font-size:12px;}
+}
+.remaining-dates{max-height:130px; overflow:auto; font-size:.8rem; color:var(--muted);}
+.ocr-status{font-size:.85rem; margin:.4rem 0;}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <h1>Sales Tracker</h1>
+  <span id="sync-pill" class="pill ok">Synced</span>
+  <button id="btn-theme" class="ghost small" type="button" title="Toggle light/dark theme">Theme</button>
+  <button id="btn-logout" class="ghost small" type="button" hidden>Logout</button>
+</header>
+
+<div class="wrap">
+  <div id="error-box" role="alert"></div>
+
+  <!-- ============ AUTH ============ -->
+  <section id="screen-auth">
+    <div class="card auth-card">
+      <h2 id="auth-title">Login</h2>
+      <label class="f" for="auth-email">Email</label>
+      <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com">
+      <label class="f" for="auth-password">Password</label>
+      <input id="auth-password" type="password" autocomplete="current-password" placeholder="Password">
+      <div class="row" style="margin-top:.8rem">
+        <button id="btn-login" type="button" style="flex:1">Login</button>
+        <button id="btn-signup" type="button" class="ghost" style="flex:1">Create account</button>
+      </div>
+      <div style="margin-top:.6rem; text-align:center">
+        <button id="btn-forgot" type="button" class="linklike">Forgot password?</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SET NEW PASSWORD (after email reset link) ============ -->
+  <section id="screen-reset" hidden>
+    <div class="card auth-card">
+      <h2>Set new password</h2>
+      <label class="f" for="reset-pass1">New password</label>
+      <input id="reset-pass1" type="password" autocomplete="new-password" placeholder="New password">
+      <label class="f" for="reset-pass2">Confirm new password</label>
+      <input id="reset-pass2" type="password" autocomplete="new-password" placeholder="Confirm new password">
+      <div class="row" style="margin-top:.8rem">
+        <button id="btn-set-password" type="button" style="flex:1">Set password</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MAIN APP ============ -->
+  <div id="screen-main" hidden>
+
+    <section id="tab-dashboard">
+      <div class="card">
+        <h2>Add Sale / Return</h2>
+        <div class="grid2">
+          <div>
+            <label class="f" for="sale-product">Product</label>
+            <select id="sale-product"></select>
+          </div>
+          <div>
+            <label class="f" for="sale-type">Type</label>
+            <select id="sale-type">
+              <option value="sale">Sale</option>
+              <option value="return">Return</option>
+            </select>
+          </div>
+        </div>
+        <label class="f" for="sale-qty">Quantity (packs)</label>
+        <input id="sale-qty" type="number" min="1" step="1" value="1">
+        <div class="row" style="margin-top:.7rem">
+          <button id="btn-add-entry" type="button" style="flex:1">Add</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sales Log</h2>
+        <div id="sales-log-list"><span class="muted">No entries yet.</span></div>
+      </div>
+
+      <div class="card" id="overall-card">
+        <h2>Overall</h2>
+        <div id="overall-body"></div>
+      </div>
+
+      <div id="product-cards"></div>
+
+      <div class="card">
+        <h2>Add New Product</h2>
+        <label class="f" for="newprod-name">Product name</label>
+        <input id="newprod-name" type="text" placeholder="e.g. New Product 10mg">
+        <div class="grid2">
+          <div>
+            <label class="f" for="newprod-target">Target (packs)</label>
+            <input id="newprod-target" type="number" min="0" step="1" value="0">
+          </div>
+          <div>
+            <label class="f" for="newprod-price">Retail price (Rs)</label>
+            <input id="newprod-price" type="number" min="0" step="0.01" value="0">
+          </div>
+        </div>
+        <div class="row" style="margin-top:.7rem">
+          <button id="btn-add-product" type="button" style="flex:1">Add Product</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-working" hidden>
+      <div class="card">
+        <h2>Working Days</h2>
+        <div id="working-body"></div>
+      </div>
+      <div class="card">
+        <h2>Holidays</h2>
+        <div class="row">
+          <input id="holiday-date" type="date" style="flex:1">
+          <button id="btn-add-holiday" type="button">Add</button>
+        </div>
+        <div id="holiday-list" style="margin-top:.5rem"></div>
+      </div>
+      <div class="card">
+        <h2>Manual Override</h2>
+        <p class="muted">Leave empty for automatic calculation.</p>
+        <div class="grid2">
+          <div>
+            <label class="f" for="override-total">Total working days</label>
+            <input id="override-total" type="number" min="0" step="1" placeholder="Auto">
+          </div>
+          <div>
+            <label class="f" for="override-left">Working days left</label>
+            <input id="override-left" type="number" min="0" step="1" placeholder="Auto">
+          </div>
+        </div>
+        <div class="row" style="margin-top:.7rem">
+          <button id="btn-save-override" type="button" style="flex:1">Save</button>
+          <button id="btn-clear-override" type="button" class="ghost" style="flex:1">Clear</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-incentive" hidden>
+      <div class="card">
+        <h2>Incentive</h2>
+        <div id="incentive-body"></div>
+      </div>
+      <div class="card">
+        <h2>Receipt</h2>
+        <div class="row">
+          <button id="btn-print-receipt" type="button" class="ghost" style="flex:1">Print / Save as PDF</button>
+          <button id="btn-download-receipt" type="button" class="ghost" style="flex:1">Download receipt</button>
+        </div>
+        <div id="receipt-body" style="margin-top:.6rem"></div>
+      </div>
+      <div class="card">
+        <h2>Export</h2>
+        <div class="row">
+          <button id="btn-export-excel" type="button" style="flex:1">Download Excel (.xlsx)</button>
+        </div>
+        <p class="muted">Contains sheets “Summary” and “Sales Log”. If Excel is unavailable, CSV files are downloaded instead.</p>
+      </div>
+      <div class="card">
+        <h2>Start New Month</h2>
+        <p class="muted">Archives this month into Month History, then clears sales, till-date values, holidays and overrides. Products, targets and prices are kept.</p>
+        <button id="btn-new-month" type="button" class="danger" style="width:100%">Start New Month</button>
+      </div>
+    </section>
+
+    <section id="tab-history" hidden>
+      <div class="card">
+        <h2>Month History</h2>
+        <div id="history-body"><span class="muted">No archived months yet.</span></div>
+      </div>
+    </section>
+
+    <section id="tab-upload" hidden>
+      <div class="card">
+        <h2>Upload Sales Screenshot</h2>
+        <p class="muted">Pick an image of the distributor report. Columns: P-Code, Product, TP, TODAY Qty, Bon, MTD Qty, Bon, Return…</p>
+        <input id="ocr-sales-file" type="file" accept="image/*">
+        <div class="ocr-status" id="ocr-sales-status"></div>
+        <div id="ocr-sales-preview"></div>
+        <div class="row" style="margin-top:.5rem">
+          <div style="flex:1">
+            <label class="f" for="ocr-report-date">Report date</label>
+            <input id="ocr-report-date" type="date">
+          </div>
+        </div>
+        <div class="row" style="margin-top:.6rem">
+          <button id="btn-apply-ocr-sales" type="button" style="flex:1" disabled>Apply</button>
+        </div>
+        <details id="ocr-sales-raw-wrap" hidden>
+          <summary>Raw OCR text</summary>
+          <pre id="ocr-sales-raw" class="muted" style="white-space:pre-wrap; font-size:.75rem"></pre>
+        </details>
+      </div>
+      <div class="card">
+        <h2>Upload Target Screenshot</h2>
+        <p class="muted">You can select multiple images. TARGET is the last number in each row.</p>
+        <input id="ocr-target-file" type="file" accept="image/*" multiple>
+        <div class="ocr-status" id="ocr-target-status"></div>
+        <div id="ocr-target-preview"></div>
+        <div class="row" style="margin-top:.6rem">
+          <button id="btn-apply-ocr-targets" type="button" style="flex:1" disabled>Apply Targets</button>
+        </div>
+        <details id="ocr-target-raw-wrap" hidden>
+          <summary>Raw OCR text</summary>
+          <pre id="ocr-target-raw" class="muted" style="white-space:pre-wrap; font-size:.75rem"></pre>
+        </details>
+      </div>
+    </section>
+
+    <section id="tab-manager" hidden>
+      <div class="card">
+        <h2>Team Overview</h2>
+        <button id="btn-load-team" type="button" style="width:100%">Load Team</button>
+        <div class="row" style="margin-top:.6rem">
+          <button id="btn-team-excel" type="button" class="ghost" style="flex:1" disabled>Download Team Excel</button>
+        </div>
+        <div id="team-body" style="margin-top:.6rem"></div>
+      </div>
+    </section>
+
+    <nav class="tabs" id="main-tabs">
+      <button type="button" data-tab="tab-dashboard" class="active">Dashboard</button>
+      <button type="button" data-tab="tab-working">Working Days</button>
+      <button type="button" data-tab="tab-incentive">Incentive</button>
+      <button type="button" data-tab="tab-history">History</button>
+      <button type="button" data-tab="tab-upload">Upload</button>
+      <button type="button" data-tab="tab-manager" id="tabbtn-manager" hidden>Team</button>
+    </nav>
+  </div>
+</div>
+
+<div id="screen-receipt-print"></div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.44.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
+<script>
+/* ==========================================================================
+   SALES TRACKER — app logic (vanilla JS, no frameworks)
+   ========================================================================== */
+
+/* ---- CONFIG: paste your Supabase project values here ---- */
+const SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY";
+
+/* ---- Constants ---- */
+const SLAB_EDGES = [86, 90, 100, 106, 116];
+const SLAB_LABELS = ["86\u201389%", "90\u201399%", "100\u2013105%", "106\u2013115%", "116%+"];
+const RATE_GROUPS = {
+  standard:     [6.16, 20.53, 41.06, 49.27, 53.37],  // Bennivair (both) + Ipravair (both)
+  combivair:    [1.87, 6.24, 12.49, 14.99, 16.24],   // Combivair Forte
+  kestineLiq:   [0.56, 1.88, 3.76, 4.51, 4.89],       // Kestine Liquid 60ml
+  kestineTab10: [0.66, 2.21, 4.42, 5.30, 5.74],       // Kestine Tablets 10
+  kestine20:    [1.35, 4.49, 8.98, 10.78, 11.68]      // Kestine 20mg
+};
+const DEFAULT_PRODUCTS = [
+  { name: "Bennivair 0.8/1.6",  price: 807.50, rates: "standard" },
+  { name: "Bennivair 0.8MG",    price: 807.50, rates: "standard" },
+  { name: "Combivair Forte",    price: 469.75, rates: "combivair" },
+  { name: "Ipravir 0.025%",     price: 420.75, rates: "standard" },
+  { name: "Ipravir S Respule",  price: 467.50, rates: "standard" },
+  { name: "Kestine 20mg",       price: 403.75, rates: "kestine20" },
+  { name: "Kestine Liquid 60ml",price: 197.20, rates: "kestineLiq" },
+  { name: "Kestine Tablets 10", price: 252.71, rates: "kestineTab10" }
+];
+
+/* ---- Global state ---- */
+const state = {
+  user: null,
+  isManager: false,
+  data: null,       // JSONB payload
+  dirty: false,
+  sb: null          // supabase client
+};
+let pushTimer = null;
+let ocrSalesRows = [];   // parsed sales-OCR rows (editable preview)
+let ocrTargetRows = [];  // parsed target-OCR rows (editable preview)
+
+/* ---- Small utilities (defined before use) ---- */
+function $(id) { return document.getElementById(id); }
+
+function showError(msg) {
+  const box = $("error-box");
+  box.textContent = "Error: " + msg;
+  box.style.display = "block";
+  toast("Error: " + msg);
+  console.error(msg);
+}
+function clearError() { $("error-box").style.display = "none"; }
+
+let toastTimer = null;
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 3200);
+}
+
+function fmtRs(n) {
+  const v = Number(n) || 0;
+  return "Rs " + v.toLocaleString("en-PK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtNum(n) {
+  const v = Number(n) || 0;
+  return v.toLocaleString("en-PK", { maximumFractionDigits: 2 });
+}
+function fmtPct(n) {
+  const v = Number(n) || 0;
+  return v.toFixed(1) + "%";
+}
+function pad2(n) { return String(n).padStart(2, "0"); }
+function fmtDate(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate()); }
+function parseDate(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || "");
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return isNaN(d.getTime()) ? null : d;
+}
+function todayStr() { return fmtDate(new Date()); }
+function monthLabel(year, month) {
+  return new Date(year, month, 1).toLocaleString("en-GB", { month: "long", year: "numeric" });
+}
+function escHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function uid() { return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); }
+
+/* ---- Default data + backfill ---- */
+function makeProduct(def) {
+  return {
+    name: def.name,
+    target: 0,
+    price: def.price,
+    rates: RATE_GROUPS[def.rates].slice(),
+    tillSale: 0,
+    tillReturn: 0
+  };
+}
+function defaultData(email) {
+  return {
+    email: email || "",
+    products: DEFAULT_PRODUCTS.map(makeProduct),
+    salesLog: [],
+    holidays: [],
+    overrideTotal: null,
+    overrideLeft: null,
+    history: []
+  };
+}
+function defFor(name) { return DEFAULT_PRODUCTS.find((d) => d.name === name) || null; }
+
+// Apply defaults to new accounts AND backfill missing price/rates on existing products.
+function ensureDefaults(data) {
+  if (!data || typeof data !== "object") return defaultData("");
+  if (!Array.isArray(data.products)) data.products = [];
+  if (!Array.isArray(data.salesLog)) data.salesLog = [];
+  if (!Array.isArray(data.holidays)) data.holidays = [];
+  if (!Array.isArray(data.history)) data.history = [];
+  const have = new Set(data.products.map((p) => p.name));
+  DEFAULT_PRODUCTS.forEach((def) => {
+    if (!have.has(def.name)) data.products.push(makeProduct(def));
+  });
+  data.products.forEach((p) => {
+    const def = defFor(p.name);
+    if (def) {
+      if (!(Number(p.price) > 0)) p.price = def.price;
+      if (!Array.isArray(p.rates) || p.rates.length !== 5 || p.rates.some((r) => !(Number(r) >= 0))) {
+        p.rates = RATE_GROUPS[def.rates].slice();
+      }
+    }
+    if (!(Number(p.target) >= 0)) p.target = 0;
+    if (!(Number(p.tillSale) >= 0)) p.tillSale = 0;
+    if (!(Number(p.tillReturn) >= 0)) p.tillReturn = 0;
+  });
+  return data;
+}
+
+/* ---- Supabase client ---- */
+function getClient() {
+  if (state.sb) return state.sb;
+  if (typeof supabase === "undefined" || !supabase.createClient) {
+    throw new Error("Supabase library failed to load. Check your internet connection.");
+  }
+  if (!SUPABASE_URL || SUPABASE_URL.indexOf("PASTE_YOUR") === 0 ||
+      !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.indexOf("PASTE_YOUR") === 0) {
+    throw new Error("Supabase keys are not configured. Open index.html and paste your SUPABASE_URL and SUPABASE_ANON_KEY in the config block at the top of the script.");
+  }
+  state.sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return state.sb;
+}
+
+/* ---- Offline-first persistence ---- */
+function localKey() { return "st_data_" + (state.user ? state.user.id : "anon"); }
+
+function saveLocal() {
+  try { localStorage.setItem(localKey(), JSON.stringify(state.data)); }
+  catch (e) { console.warn("localStorage save failed", e); }
+}
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(localKey());
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function updateSyncPill() {
+  const pill = $("sync-pill");
+  if (!state.user) { pill.textContent = "Synced"; pill.className = "pill ok"; return; }
+  if (!navigator.onLine || state.dirty) {
+    pill.textContent = "Offline: saved on this device";
+    pill.className = "pill warn";
+  } else {
+    pill.textContent = "Synced";
+    pill.className = "pill ok";
+  }
+}
+function markDirty() {
+  state.dirty = true;
+  saveLocal();
+  updateSyncPill();
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushToCloud, 500);
+}
+async function pushToCloud() {
+  if (!state.user || !navigator.onLine) { updateSyncPill(); return; }
+  try {
+    const sb = getClient();
+    const { error } = await sb.from("user_data").upsert({ user_id: state.user.id, data: state.data });
+    if (error) throw error;
+    state.dirty = false;
+  } catch (e) {
+    console.warn("pushToCloud failed (will retry):", e.message || e);
+  }
+  updateSyncPill();
+}
+window.addEventListener("online", () => { toast("Back online — syncing…"); pushToCloud(); });
+window.addEventListener("offline", updateSyncPill);
+setInterval(() => { if (state.dirty && state.user) pushToCloud(); }, 30000);
+
+/* ---- Theme ---- */
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  try { localStorage.setItem("st_theme", t); } catch (e) {}
+}
+function initTheme() {
+  let t = "light";
+  try { t = localStorage.getItem("st_theme") || "light"; } catch (e) {}
+  applyTheme(t);
+}
+
+/* ---- Screens & tabs ---- */
+function showScreen(name) {
+  $("screen-auth").hidden = name !== "auth";
+  $("screen-reset").hidden = name !== "reset";
+  $("screen-main").hidden = name !== "main";
+  clearError();
+}
+function switchTab(tabId) {
+  ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-manager"].forEach((id) => {
+    $(id).hidden = id !== tabId;
+  });
+  document.querySelectorAll("#main-tabs button").forEach((b) => {
+    b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
+  });
+  if (tabId === "tab-working") renderWorking();
+  if (tabId === "tab-incentive") { renderIncentive(); renderReceipt(); }
+  if (tabId === "tab-history") renderHistory();
+  if (tabId === "tab-dashboard") renderDashboard();
+}
+
+/* ---- Auth ---- */
+async function handleLogin() {
+  clearError();
+  const email = $("auth-email").value.trim();
+  const password = $("auth-password").value;
+  if (!email || !password) { showError("Please enter email and password."); return; }
+  try {
+    const sb = getClient();
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  } catch (e) { showError(e.message || "Login failed."); }
+}
+async function handleSignup() {
+  clearError();
+  const email = $("auth-email").value.trim();
+  const password = $("auth-password").value;
+  if (!email || !password) { showError("Please enter email and password."); return; }
+  if (password.length < 6) { showError("Password must be at least 6 characters."); return; }
+  try {
+    const sb = getClient();
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if (error) throw error;
+    if (!data.session) {
+      toast("Account created. Please login.");
+    }
+  } catch (e) { showError(e.message || "Signup failed."); }
+}
+async function handleLogout() {
+  try {
+    const sb = getClient();
+    await sb.auth.signOut();
+  } catch (e) { showError(e.message || "Logout failed."); }
+}
+async function handleForgot() {
+  clearError();
+  const email = $("auth-email").value.trim();
+  if (!email) { showError("Enter your email first, then click Forgot password."); return; }
+  try {
+    const sb = getClient();
+    const redirectTo = window.location.origin + window.location.pathname;
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+    toast("Password reset email sent. Check your inbox.");
+  } catch (e) { showError(e.message || "Could not send reset email."); }
+}
+async function handleSetPassword() {
+  clearError();
+  const p1 = $("reset-pass1").value;
+  const p2 = $("reset-pass2").value;
+  if (!p1 || p1.length < 6) { showError("Password must be at least 6 characters."); return; }
+  if (p1 !== p2) { showError("Passwords do not match."); return; }
+  try {
+    const sb = getClient();
+    const { error } = await sb.auth.updateUser({ password: p1 });
+    if (error) throw error;
+    toast("Password updated. You are logged in.");
+    window.location.hash = "";
+  } catch (e) { showError(e.message || "Could not set new password."); }
+}
+
+/* ---- Load / create user data ---- */
+async function loadUserData() {
+  const sb = getClient();
+  let data = null;
+  if (navigator.onLine) {
+    try {
+      const { data: row, error } = await sb.from("user_data").select("data").eq("user_id", state.user.id).maybeSingle();
+      if (error) throw error;
+      if (row && row.data) data = row.data;
+    } catch (e) {
+      console.warn("cloud load failed, using local copy:", e.message || e);
+    }
+  }
+  if (!data) data = loadLocal();
+  if (!data) {
+    data = defaultData(state.user.email || "");
+    state.dirty = true;
+  }
+  state.data = ensureDefaults(data);
+  if (!state.data.email && state.user.email) state.data.email = state.user.email;
+  saveLocal();
+  updateSyncPill();
+  if (state.dirty) pushToCloud();
+}
+
+async function checkManager() {
+  state.isManager = false;
+  try {
+    const sb = getClient();
+    const { data, error } = await sb.from("managers").select("user_id").eq("user_id", state.user.id).maybeSingle();
+    if (!error && data) state.isManager = true;
+  } catch (e) { console.warn("manager check failed:", e.message || e); }
+  $("tabbtn-manager").hidden = !state.isManager;
+}
+
+async function onAuthChange(session) {
+  if (session && session.user) {
+    state.user = session.user;
+    $("btn-logout").hidden = false;
+    showScreen("main");
+    await loadUserData();
+    await checkManager();
+    switchTab("tab-dashboard");
+    renderAll();
+  } else {
+    state.user = null;
+    state.data = null;
+    state.isManager = false;
+    $("btn-logout").hidden = true;
+    showScreen("auth");
+  }
+  updateSyncPill();
+}
+
+function wireAuth() {
+  $("btn-login").addEventListener("click", handleLogin);
+  $("btn-signup").addEventListener("click", handleSignup);
+  $("btn-logout").addEventListener("click", handleLogout);
+  $("btn-forgot").addEventListener("click", handleForgot);
+  $("btn-set-password").addEventListener("click", handleSetPassword);
+  $("auth-password").addEventListener("keydown", (e) => { if (e.key === "Enter") handleLogin(); });
+}
+
+/* ---- Working days ---- */
+function workingInfo() {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let sundays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (new Date(year, month, d).getDay() === 0) sundays++;
+  }
+  const holSet = new Set(state.data.holidays || []);
+  let holCount = 0;
+  holSet.forEach((h) => {
+    const dt = parseDate(h);
+    if (dt && dt.getFullYear() === year && dt.getMonth() === month && dt.getDay() !== 0) holCount++;
+  });
+  const autoTotal = daysInMonth - sundays - holCount;
+  const t = todayStr();
+  const remDates = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dt = new Date(year, month, d);
+    const key = fmtDate(dt);
+    if (key < t) continue;
+    if (dt.getDay() === 0) continue;
+    if (holSet.has(key)) continue;
+    remDates.push(key);
+  }
+  const autoLeft = remDates.length;
+  const total = (state.data.overrideTotal != null && state.data.overrideTotal !== "") ? Number(state.data.overrideTotal) : autoTotal;
+  const left = (state.data.overrideLeft != null && state.data.overrideLeft !== "") ? Number(state.data.overrideLeft) : autoLeft;
+  const elapsed = total > 0 ? Math.max(total - left + 1, 0) : 0;
+  const timePct = total > 0 ? (elapsed / total) * 100 : 0;
+  return { year, month, daysInMonth, sundays, holCount, autoTotal, autoLeft, total, left, remDates, elapsed, timePct,
+           todayLabel: now.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) };
+}
+
+/* ---- Per-product calculations ---- */
+function todayLogNet(productName) {
+  const t = todayStr();
+  let net = 0, sale = 0, ret = 0;
+  (state.data.salesLog || []).forEach((e) => {
+    if (e.date === t && e.product === productName) {
+      if (e.qty >= 0) { sale += e.qty; net += e.qty; }
+      else { ret += -e.qty; net += e.qty; }
+    }
+  });
+  return { net, sale, ret };
+}
+function slabIndex(ach) {
+  if (ach >= 116) return 4;
+  if (ach >= 106) return 3;
+  if (ach >= 100) return 2;
+  if (ach >= 90) return 1;
+  if (ach >= 86) return 0;
+  return -1;
+}
+function productStats(p, wi) {
+  const net = (Number(p.tillSale) || 0) - (Number(p.tillReturn) || 0);
+  const target = Number(p.target) || 0;
+  const remaining = Math.max(target - net, 0);
+  const left = wi.left;
+  const achievement = target > 0 ? (net / target) * 100 : 0;
+  const today = todayLogNet(p.name);
+  const netBeforeToday = net - today.net;
+  const todayTarget = left > 0 ? Math.max(target - netBeforeToday, 0) / left : Math.max(target - netBeforeToday, 0);
+  const neededPerDay = left > 0 ? remaining / left : remaining;
+  const dailyAvg = wi.elapsed > 0 ? net / wi.elapsed : 0;
+  const saleValue = net * (Number(p.price) || 0);
+  const targetValue = target * (Number(p.price) || 0);
+  const si = slabIndex(achievement);
+  const rate = si >= 0 ? (Number(p.rates[si]) || 0) : 0;
+  const incentive = Math.max(net, 0) * rate;
+  return { net, target, remaining, achievement, today, todayTarget, neededPerDay, dailyAvg,
+           saleValue, targetValue, slab: si, slabLabel: si >= 0 ? SLAB_LABELS[si] : "Below 86%", rate, incentive,
+           gross: Number(p.tillSale) || 0, ret: Number(p.tillReturn) || 0 };
+}
+function overallStats(wi) {
+  const o = { sale: 0, target: 0, ret: 0, gross: 0, saleValue: 0, targetValue: 0, incentive: 0, todaySale: 0, todayTarget: 0 };
+  (state.data.products || []).forEach((p) => {
+    const s = productStats(p, wi);
+    o.sale += s.net; o.target += s.target; o.ret += s.ret; o.gross += s.gross;
+    o.saleValue += s.saleValue; o.targetValue += s.targetValue; o.incentive += s.incentive;
+    o.todaySale += s.today.net; o.todayTarget += s.todayTarget;
+  });
+  o.remaining = Math.max(o.target - o.sale, 0);
+  o.achievement = o.target > 0 ? (o.sale / o.target) * 100 : 0;
+  o.neededPerDay = wi.left > 0 ? o.remaining / wi.left : o.remaining;
+  return o;
+}
+
+/* ---- Two-tap confirm helper ---- */
+function armConfirm(btn, label, fn) {
+  if (btn.dataset.armed === "1") {
+    btn.dataset.armed = "";
+    btn.textContent = label;
+    fn();
+    return;
+  }
+  btn.dataset.armed = "1";
+  btn.textContent = "Tap again to confirm";
+  setTimeout(() => { btn.dataset.armed = ""; btn.textContent = label; }, 3000);
+}
+
+/* ---- Dashboard render ---- */
+function renderDashboard() {
+  if (!state.data) return;
+  const wi = workingInfo();
+  const sel = $("sale-product");
+  const cur = sel.value;
+  sel.innerHTML = "";
+  state.data.products.forEach((p) => {
+    const opt = document.createElement("option");
+    opt.value = p.name; opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+  if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
+  renderLog();
+  renderOverall(wi);
+  renderProductCards(wi);
+}
+function renderLog() {
+  const list = $("sales-log-list");
+  const log = (state.data.salesLog || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (!log.length) { list.innerHTML = '<span class="muted">No entries yet.</span>'; return; }
+  list.innerHTML = "";
+  log.slice(0, 60).forEach((e) => {
+    const div = document.createElement("div");
+    div.className = "log-item";
+    const typeCls = e.qty >= 0 ? "sale" : "return";
+    const typeTxt = e.qty >= 0 ? "Sale" : "Return";
+    div.innerHTML = '<span class="muted">' + escHtml(e.date) + '</span>' +
+      '<span style="flex:1">' + escHtml(e.product) + '</span>' +
+      '<span class="badge ' + typeCls + '">' + typeTxt + '</span>' +
+      '<b>' + fmtNum(Math.abs(e.qty)) + '</b>';
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "ghost small"; del.textContent = "Delete";
+    del.addEventListener("click", () => deleteEntry(e.id));
+    div.appendChild(del);
+    list.appendChild(div);
+  });
+  if (log.length > 60) {
+    const more = document.createElement("div");
+    more.className = "muted";
+    more.textContent = "Showing latest 60 of " + log.length + " entries.";
+    list.appendChild(more);
+  }
+}
+function barRow(label, pct, cls) {
+  return '<div class="muted" style="font-size:.78rem">' + escHtml(label) + ' <b>' + fmtPct(pct) + '</b></div>' +
+    '<div class="bar"><div class="' + cls + '" style="width:' + Math.min(100, Math.max(0, pct)).toFixed(1) + '%"></div></div>';
+}
+function renderOverall(wi) {
+  const o = overallStats(wi);
+  const status = o.achievement >= wi.timePct ? "Ahead of time" : "Behind time";
+  const statusCls = o.achievement >= wi.timePct ? "ok" : "warn";
+  $("overall-body").innerHTML =
+    kv("Total net sale", fmtNum(o.sale) + " / " + fmtNum(o.target) + " packs") +
+    kv("Today (net / target)", fmtNum(o.todaySale) + " / " + fmtNum(o.todayTarget)) +
+    kv("Needed per day", fmtNum(o.neededPerDay) + " packs") +
+    kv("Total return", fmtNum(o.ret) + " packs") +
+    kv("Total sale value", fmtRs(o.saleValue)) +
+    kv("Target value", fmtRs(o.targetValue)) +
+    barRow("Achievement", o.achievement, "bar-ach") +
+    barRow("Time elapsed", wi.timePct, "bar-time") +
+    '<div style="margin-top:.4rem"><span class="pill ' + statusCls + '">' + status + '</span></div>';
+}
+function kv(k, v) {
+  return '<div class="kv"><span class="muted">' + escHtml(k) + '</span><b>' + escHtml(v) + '</b></div>';
+}
+function renderProductCards(wi) {
+  const host = $("product-cards");
+  host.innerHTML = "";
+  state.data.products.forEach((p, idx) => {
+    const s = productStats(p, wi);
+    const status = s.achievement >= wi.timePct ? "Ahead of time" : "Behind time";
+    const statusCls = s.achievement >= wi.timePct ? "ok" : "warn";
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML =
+      '<div class="prod-head"><h3>' + escHtml(p.name) + '</h3><span class="pill ' + statusCls + '">' + status + '</span></div>' +
+      '<div class="grid2">' +
+        '<div><label class="f" for="pt-' + idx + '">Target (packs)</label>' +
+        '<input id="pt-' + idx + '" type="number" min="0" step="1" value="' + (Number(p.target) || 0) + '"></div>' +
+        '<div><label class="f" for="pp-' + idx + '">Retail price (Rs)</label>' +
+        '<input id="pp-' + idx + '" type="number" min="0" step="0.01" value="' + (Number(p.price) || 0) + '"></div>' +
+      '</div>' +
+      '<div class="grid2">' +
+        '<div><label class="f" for="ps-' + idx + '">Till date sale</label>' +
+        '<input id="ps-' + idx + '" type="number" min="0" step="1" value="' + (Number(p.tillSale) || 0) + '"></div>' +
+        '<div><label class="f" for="pr-' + idx + '">Till date return</label>' +
+        '<input id="pr-' + idx + '" type="number" min="0" step="1" value="' + (Number(p.tillReturn) || 0) + '"></div>' +
+      '</div>' +
+      '<div class="today-box"><b>Today:</b> ' + fmtNum(s.today.sale) + ' sale, ' + fmtNum(s.today.ret) + ' return' +
+      ' &nbsp;|&nbsp; Today\'s target: <b>' + fmtNum(s.todayTarget) + '</b> packs</div>' +
+      kv("Net till-date sale", fmtNum(s.net) + " packs") +
+      kv("Gross sale / Return", fmtNum(s.gross) + " / " + fmtNum(s.ret)) +
+      kv("Remaining", fmtNum(s.remaining) + " packs") +
+      kv("Needed per day", fmtNum(s.neededPerDay) + " packs") +
+      kv("Daily average", fmtNum(s.dailyAvg) + " packs") +
+      kv("Sale value", fmtRs(s.saleValue)) +
+      kv("Target value", fmtRs(s.targetValue)) +
+      barRow("Achievement", s.achievement, "bar-ach") +
+      barRow("Time elapsed", wi.timePct, "bar-time") +
+      '<div class="row" style="margin-top:.5rem">' +
+        '<button type="button" class="ghost small" id="preset-' + idx + '" style="flex:1">Reset sales</button>' +
+        '<button type="button" class="danger small" id="prm-' + idx + '" style="flex:1">Remove product</button>' +
+      '</div>';
+    host.appendChild(card);
+    $("pt-" + idx).addEventListener("change", (e) => { p.target = Math.max(0, Number(e.target.value) || 0); markDirty(); renderDashboard(); });
+    $("pp-" + idx).addEventListener("change", (e) => { p.price = Math.max(0, Number(e.target.value) || 0); markDirty(); renderDashboard(); });
+    $("ps-" + idx).addEventListener("change", (e) => { p.tillSale = Math.max(0, Number(e.target.value) || 0); markDirty(); renderDashboard(); });
+    $("pr-" + idx).addEventListener("change", (e) => { p.tillReturn = Math.max(0, Number(e.target.value) || 0); markDirty(); renderDashboard(); });
+    $("preset-" + idx).addEventListener("click", (e) => {
+      armConfirm(e.target, "Reset sales", () => {
+        p.tillSale = 0; p.tillReturn = 0;
+        state.data.salesLog = (state.data.salesLog || []).filter((x) => x.product !== p.name);
+        markDirty(); renderDashboard(); toast("Sales cleared for " + p.name);
+      });
+    });
+    $("prm-" + idx).addEventListener("click", (e) => {
+      armConfirm(e.target, "Remove product", () => {
+        state.data.products.splice(idx, 1);
+        markDirty(); renderDashboard(); toast("Removed " + p.name);
+      });
+    });
+  });
+}
+
+/* ---- Sales log actions ---- */
+function addEntry() {
+  clearError();
+  const product = $("sale-product").value;
+  const type = $("sale-type").value;
+  const qty = Math.floor(Number($("sale-qty").value) || 0);
+  if (!product) { showError("No product available."); return; }
+  if (!(qty > 0)) { showError("Quantity must be at least 1."); return; }
+  const p = state.data.products.find((x) => x.name === product);
+  if (!p) { showError("Selected product not found."); return; }
+  const signed = type === "return" ? -qty : qty;
+  state.data.salesLog.push({ id: uid(), date: todayStr(), product, qty: signed });
+  if (signed >= 0) p.tillSale = (Number(p.tillSale) || 0) + signed;
+  else p.tillReturn = (Number(p.tillReturn) || 0) + (-signed);
+  $("sale-qty").value = 1;
+  markDirty(); renderDashboard();
+  toast((type === "return" ? "Return" : "Sale") + " of " + qty + " added for " + product);
+}
+function deleteEntry(id) {
+  const i = (state.data.salesLog || []).findIndex((e) => e.id === id);
+  if (i < 0) return;
+  const e = state.data.salesLog[i];
+  const p = state.data.products.find((x) => x.name === e.product);
+  if (p) {
+    if (e.qty >= 0) p.tillSale = Math.max(0, (Number(p.tillSale) || 0) - e.qty);
+    else p.tillReturn = Math.max(0, (Number(p.tillReturn) || 0) - (-e.qty));
+  }
+  state.data.salesLog.splice(i, 1);
+  markDirty(); renderDashboard(); toast("Entry deleted.");
+}
+function addProduct() {
+  clearError();
+  const name = $("newprod-name").value.trim();
+  const target = Math.max(0, Math.floor(Number($("newprod-target").value) || 0));
+  const price = Math.max(0, Number($("newprod-price").value) || 0);
+  if (!name) { showError("Enter a product name."); return; }
+  if (state.data.products.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
+    showError("A product with this name already exists."); return;
+  }
+  state.data.products.push({ name, target, price, rates: RATE_GROUPS.standard.slice(), tillSale: 0, tillReturn: 0 });
+  $("newprod-name").value = ""; $("newprod-target").value = 0; $("newprod-price").value = 0;
+  markDirty(); renderDashboard(); toast("Product added: " + name);
+}
+function renderAll() { renderDashboard(); }
+
+/* ---- Working days tab ---- */
+function renderWorking() {
+  if (!state.data) return;
+  const wi = workingInfo();
+  const mName = monthLabel(wi.year, wi.month);
+  let html =
+    kv("Today", escHtml(wi.todayLabel)) +
+    '<div class="kv"><span class="muted">' + escHtml(mName) + '</span><b>' +
+    wi.daysInMonth + " days \u2212 " + wi.sundays + " Sundays \u2212 " + wi.holCount + " holidays = " +
+    wi.autoTotal + " working days</b></div>" +
+    kv("Total working days", fmtNum(wi.total) + (state.data.overrideTotal ? " (manual)" : "")) +
+    kv("Working days left (incl. today)", fmtNum(wi.left) + (state.data.overrideLeft ? " (manual)" : "")) +
+    kv("Time elapsed", fmtPct(wi.timePct)) +
+    '<p class="muted">Sundays and holidays are not counted.</p>' +
+    '<h3>Remaining working dates</h3><div class="remaining-dates">' +
+    (wi.remDates.length ? wi.remDates.map(escHtml).join("<br>") : '<span class="muted">None.</span>') + "</div>";
+  $("working-body").innerHTML = html;
+  $("override-total").value = state.data.overrideTotal != null ? state.data.overrideTotal : "";
+  $("override-left").value = state.data.overrideLeft != null ? state.data.overrideLeft : "";
+  const hl = $("holiday-list");
+  hl.innerHTML = "";
+  (state.data.holidays || []).slice().sort().forEach((h) => {
+    const div = document.createElement("div");
+    div.className = "log-item";
+    div.innerHTML = "<span style='flex:1'>" + escHtml(h) + "</span>";
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "ghost small"; del.textContent = "Remove";
+    del.addEventListener("click", () => {
+      state.data.holidays = state.data.holidays.filter((x) => x !== h);
+      markDirty(); renderWorking(); renderDashboard();
+    });
+    div.appendChild(del);
+    hl.appendChild(div);
+  });
+  if (!(state.data.holidays || []).length) hl.innerHTML = '<span class="muted">No holidays added.</span>';
+}
+function addHoliday() {
+  clearError();
+  const v = $("holiday-date").value;
+  if (!v || !parseDate(v)) { showError("Pick a valid holiday date."); return; }
+  if (!(state.data.holidays || []).includes(v)) {
+    state.data.holidays.push(v);
+    markDirty(); renderWorking(); renderDashboard(); toast("Holiday added: " + v);
+  }
+  $("holiday-date").value = "";
+}
+function saveOverride() {
+  clearError();
+  const t = $("override-total").value.trim();
+  const l = $("override-left").value.trim();
+  if (t !== "" && !(Number(t) >= 0)) { showError("Total working days must be a number."); return; }
+  if (l !== "" && !(Number(l) >= 0)) { showError("Working days left must be a number."); return; }
+  state.data.overrideTotal = t === "" ? null : Math.floor(Number(t));
+  state.data.overrideLeft = l === "" ? null : Math.floor(Number(l));
+  markDirty(); renderWorking(); renderDashboard(); toast("Override saved.");
+}
+function clearOverride() {
+  state.data.overrideTotal = null; state.data.overrideLeft = null;
+  markDirty(); renderWorking(); renderDashboard(); toast("Override cleared — back to automatic.");
+}
+
+/* ---- Incentive tab ---- */
+function renderIncentive() {
+  if (!state.data) return;
+  const wi = workingInfo();
+  let total = 0, html = "";
+  state.data.products.forEach((p, idx) => {
+    const s = productStats(p, wi);
+    total += s.incentive;
+    html += '<div class="card" style="margin-bottom:.6rem"><div class="prod-head"><h3>' + escHtml(p.name) + '</h3></div>' +
+      kv("Achievement", fmtPct(s.achievement) + " (" + fmtNum(s.net) + " / " + fmtNum(s.target) + " packs)") +
+      kv("Slab", escHtml(s.slabLabel)) +
+      kv("Rate", fmtRs(s.rate) + " / pack") +
+      kv("Incentive", "<b>" + fmtRs(s.incentive) + "</b>") +
+      '<details><summary>Edit rates (Rs per pack)</summary>';
+    SLAB_LABELS.forEach((lab, si) => {
+      html += '<label class="f" for="rate-' + idx + '-' + si + '">' + escHtml(lab) + '</label>' +
+        '<input id="rate-' + idx + '-' + si + '" type="number" min="0" step="0.01" value="' + (Number(p.rates[si]) || 0) + '">';
+    });
+    html += "</details></div>";
+  });
+  html += '<div class="card"><div class="kv"><span><b>Total incentive</b></span><b>' + fmtRs(total) + "</b></div></div>";
+  $("incentive-body").innerHTML = html;
+  state.data.products.forEach((p, idx) => {
+    SLAB_LABELS.forEach((lab, si) => {
+      const inp = $("rate-" + idx + "-" + si);
+      if (inp) inp.addEventListener("change", (e) => {
+        p.rates[si] = Math.max(0, Number(e.target.value) || 0);
+        markDirty(); renderIncentive();
+      });
+    });
+  });
+}
+
+/* ---- Receipt ---- */
+function receiptData() {
+  const wi = workingInfo();
+  const rows = state.data.products.map((p) => {
+    const s = productStats(p, wi);
+    return { name: p.name, target: s.target, net: s.net, ret: s.ret, achievement: s.achievement, incentive: s.incentive, saleValue: s.saleValue };
+  });
+  const o = overallStats(wi);
+  return { rows, o, wi, month: monthLabel(wi.year, wi.month), email: state.data.email || "" };
+}
+function renderReceipt() {
+  if (!state.data) return;
+  const r = receiptData();
+  let html = '<table class="data"><tr><th>Product</th><th>Target</th><th>Net sale</th><th>Ach.%</th><th>Incentive</th></tr>';
+  r.rows.forEach((row) => {
+    html += "<tr><td>" + escHtml(row.name) + "</td><td>" + fmtNum(row.target) + "</td><td>" + fmtNum(row.net) +
+      "</td><td>" + fmtPct(row.achievement) + "</td><td>" + fmtRs(row.incentive) + "</td></tr>";
+  });
+  html += "</table>" + kv("Total incentive", fmtRs(r.o.incentive)) + kv("Total sale value", fmtRs(r.o.saleValue));
+  $("receipt-body").innerHTML = html;
+}
+function printReceipt() {
+  const r = receiptData();
+  let html = "<h2>Sales Tracker — Receipt</h2>" +
+    "<p>" + escHtml(r.month) + " &nbsp;|&nbsp; " + escHtml(r.email) + " &nbsp;|&nbsp; " + escHtml(todayStr()) + "</p>" +
+    "<table><tr><th>Product</th><th>Target</th><th>Net sale</th><th>Return</th><th>Ach.%</th><th>Incentive (Rs)</th></tr>";
+  r.rows.forEach((row) => {
+    html += "<tr><td>" + escHtml(row.name) + "</td><td>" + fmtNum(row.target) + "</td><td>" + fmtNum(row.net) +
+      "</td><td>" + fmtNum(row.ret) + "</td><td>" + fmtPct(row.achievement) + "</td><td>" + fmtRs(row.incentive) + "</td></tr>";
+  });
+  html += "</table><p><b>Total incentive: " + fmtRs(r.o.incentive) + "</b> &nbsp;|&nbsp; Total sale value: " + fmtRs(r.o.saleValue) + "</p>";
+  $("screen-receipt-print").innerHTML = html;
+  window.print();
+}
+function downloadReceipt() {
+  const r = receiptData();
+  const lines = ["Sales Tracker — Receipt", r.month + " | " + r.email + " | " + todayStr(), "",
+    "Product | Target | Net sale | Return | Ach.% | Incentive (Rs)"];
+  r.rows.forEach((row) => {
+    lines.push([row.name, fmtNum(row.target), fmtNum(row.net), fmtNum(row.ret), fmtPct(row.achievement), fmtRs(row.incentive)].join(" | "));
+  });
+  lines.push("", "Total incentive: " + fmtRs(r.o.incentive), "Total sale value: " + fmtRs(r.o.saleValue));
+  downloadFile(lines.join("\n"), "receipt-" + todayStr() + ".txt", "text/plain");
+}
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ---- Excel export ---- */
+function exportExcel() {
+  clearError();
+  try {
+    const wi = workingInfo();
+    const summary = state.data.products.map((p) => {
+      const s = productStats(p, wi);
+      return { Product: p.name, Target: s.target, "Till sale": s.gross, "Till return": s.ret,
+        "Net sale": s.net, Remaining: s.remaining, "Ach.%": Number(s.achievement.toFixed(1)),
+        Slab: s.slabLabel, "Rate (Rs)": s.rate, "Incentive (Rs)": Number(s.incentive.toFixed(2)),
+        "Sale value (Rs)": Number(s.saleValue.toFixed(2)) };
+    });
+    const log = (state.data.salesLog || []).map((e) => ({
+      Date: e.date, Product: e.product, Type: e.qty >= 0 ? "Sale" : "Return", Quantity: Math.abs(e.qty)
+    }));
+    if (typeof XLSX === "undefined") throw new Error("Excel library not loaded");
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), "Summary");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(log), "Sales Log");
+    XLSX.writeFile(wb, "sales-tracker-" + todayStr() + ".xlsx");
+    toast("Excel downloaded.");
+  } catch (e) {
+    // CSV fallback
+    try {
+      const wi = workingInfo();
+      const head = "Product,Target,Net sale,Return,Ach.%,Slab,Incentive (Rs)\n";
+      const body = state.data.products.map((p) => {
+        const s = productStats(p, wi);
+        return ['"' + p.name.replace(/"/g, '""') + '"', s.target, s.net, s.ret,
+          s.achievement.toFixed(1), '"' + s.slabLabel + '"', s.incentive.toFixed(2)].join(",");
+      }).join("\n");
+      downloadFile(head + body, "summary-" + todayStr() + ".csv", "text/csv");
+      const lh = "Date,Product,Type,Quantity\n";
+      const lb = (state.data.salesLog || []).map((x) =>
+        [x.date, '"' + String(x.product).replace(/"/g, '""') + '"', x.qty >= 0 ? "Sale" : "Return", Math.abs(x.qty)].join(",")).join("\n");
+      downloadFile(lh + lb, "sales-log-" + todayStr() + ".csv", "text/csv");
+      toast("Excel library unavailable — CSV files downloaded instead.");
+    } catch (e2) { showError("Export failed: " + (e2.message || e2)); }
+  }
+}
+
+/* ---- New month + history ---- */
+function startNewMonth() {
+  const wi = workingInfo();
+  const o = overallStats(wi);
+  const entry = {
+    id: uid(),
+    month: monthLabel(wi.year, wi.month),
+    archivedAt: todayStr(),
+    totals: { target: o.target, sale: o.sale, ret: o.ret, achievement: o.achievement, incentive: o.incentive, saleValue: o.saleValue },
+    products: state.data.products.map((p) => {
+      const s = productStats(p, wi);
+      return { name: p.name, target: s.target, sale: s.gross, ret: s.ret, net: s.net, achievement: s.achievement, incentive: s.incentive };
+    })
+  };
+  state.data.history.unshift(entry);
+  state.data.salesLog = [];
+  state.data.products.forEach((p) => { p.tillSale = 0; p.tillReturn = 0; });
+  state.data.holidays = [];
+  state.data.overrideTotal = null; state.data.overrideLeft = null;
+  markDirty(); renderAll(); switchTab("tab-history");
+  toast("New month started. Previous month archived.");
+}
+function renderHistory() {
+  if (!state.data) return;
+  const host = $("history-body");
+  host.innerHTML = "";
+  const hist = state.data.history || [];
+  if (!hist.length) { host.innerHTML = '<span class="muted">No archived months yet.</span>'; return; }
+  hist.forEach((h, i) => {
+    const det = document.createElement("details");
+    const sum = document.createElement("summary");
+    sum.textContent = h.month + " — " + fmtNum(h.totals.sale) + "/" + fmtNum(h.totals.target) +
+      " (" + fmtPct(h.totals.achievement) + "), " + fmtRs(h.totals.incentive);
+    det.appendChild(sum);
+    let html = '<table class="data"><tr><th>Product</th><th>Target</th><th>Net</th><th>Ach.%</th><th>Incentive</th></tr>';
+    (h.products || []).forEach((p) => {
+      html += "<tr><td>" + escHtml(p.name) + "</td><td>" + fmtNum(p.target) + "</td><td>" + fmtNum(p.net) +
+        "</td><td>" + fmtPct(p.achievement) + "</td><td>" + fmtRs(p.incentive) + "</td></tr>";
+    });
+    html += "</table>";
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    det.appendChild(div);
+    host.appendChild(det);
+  });
+}
+
+/* ---- OCR: product name matching ---- */
+function matchSalesProduct(up) {
+  if (up.indexOf("BENNIVAIR") >= 0) {
+    if (up.indexOf("1.6") >= 0 || up.indexOf("1/6") >= 0 || /BENNIVAIR[-\s]?S\b/.test(up)) return "Bennivair 0.8/1.6";
+    return "Bennivair 0.8MG";
+  }
+  if (up.indexOf("COMBIVAIR") >= 0) return "Combivair Forte";
+  if (up.indexOf("IPRAVAIR") >= 0) {
+    if (/IPRAVAIR[-\s]?S\b/.test(up)) return "Ipravir S Respule";
+    return "Ipravir 0.025%";
+  }
+  if (up.indexOf("KESTINE") >= 0) {
+    if (up.indexOf("LIQUID") >= 0) return "Kestine Liquid 60ml";
+    if (up.indexOf("10") >= 0) return "Kestine Tablets 10";
+    if (up.indexOf("20") >= 0) return "Kestine 20mg";
+    return null;
+  }
+  return null;
+}
+function matchTargetProduct(up) {
+  if (up.indexOf("BENNIVAIR") >= 0) {
+    if (/BENNIVAIR[-\s]?S\b/.test(up)) return "Bennivair 0.8/1.6";
+    return "Bennivair 0.8MG";
+  }
+  if (up.indexOf("COMBIVAIR") >= 0) return "Combivair Forte";
+  if (up.indexOf("IPRAVAIR") >= 0) {
+    if (/IPRAVAIR[-\s]?S\b/.test(up)) return "Ipravir S Respule";
+    return "Ipravir 0.025%";
+  }
+  if (up.indexOf("KESTINE") >= 0) {
+    if (up.indexOf("LIQUID") >= 0) return "Kestine Liquid 60ml";
+    if (up.indexOf("10") >= 0) return "Kestine Tablets 10";
+    if (up.indexOf("20") >= 0) return "Kestine 20mg";
+    return null;
+  }
+  return null;
+}
+
+/* ---- OCR: sales report parsing ----
+   Columns: P-Code, Product, TP, TODAY Qty, Bon, MTD Qty, Bon, Return...
+   Use the first 5 integers AFTER the TP price: today=1st, MTD=3rd, return=5th. */
+function parseSalesOCR(text) {
+  const merged = {};
+  text.split("\n").forEach((line) => {
+    const up = line.toUpperCase();
+    if (up.indexOf("GROUP TOTAL") >= 0) return;
+    const pm = line.match(/(^|\s)\d+\.\d{2}(\s|$)/);
+    if (!pm) return;
+    const token = pm[0].trim();
+    const pidx = pm.index + pm[0].indexOf(token);
+    const after = line.slice(pidx + token.length);
+    const ints = after.match(/\d+/g);
+    if (!ints || ints.length < 5) return;
+    const name = matchSalesProduct(up);
+    if (!name) return;
+    const v = ints.slice(0, 5).map(Number);
+    if (!merged[name]) merged[name] = { product: name, today: 0, mtd: 0, ret: 0 };
+    merged[name].today += v[0];
+    merged[name].mtd += v[2];
+    merged[name].ret += v[4];
+  });
+  return Object.keys(merged).map((k) => merged[k]);
+}
+
+/* ---- OCR: target report parsing ---- TARGET = LAST number in the row. */
+function parseTargetOCR(text) {
+  const merged = {};
+  text.split("\n").forEach((line) => {
+    const up = line.toUpperCase();
+    const nums = line.match(/-?[\d,]+/g);
+    if (!nums || !nums.length) return;
+    const firstIdx = line.search(/-?[\d,]+/);
+    const namePart = up.slice(0, firstIdx).replace(/[^A-Z]/g, "");
+    if (["KESTINE", "IPRAVAIR", "BENNIVAIR", "COMBIVAIR"].indexOf(namePart) >= 0) return; // brand-total row
+    const name = matchTargetProduct(up);
+    if (!name) return;
+    const target = Number(nums[nums.length - 1].replace(/,/g, ""));
+    if (!(target >= 0)) return;
+    merged[name] = { product: name, target: target };
+  });
+  return Object.keys(merged).map((k) => merged[k]);
+}
+
+function renderOcrSalesPreview() {
+  const host = $("ocr-sales-preview");
+  if (!ocrSalesRows.length) { host.innerHTML = ""; $("btn-apply-ocr-sales").disabled = true; return; }
+  let html = '<table class="data"><tr><th>Product</th><th>Today</th><th>Till date</th><th>Return</th></tr>';
+  ocrSalesRows.forEach((r, i) => {
+    html += "<tr><td>" + escHtml(r.product) + "</td>" +
+      '<td><input id="ocrs-t-' + i + '" type="number" min="0" step="1" value="' + r.today + '"></td>' +
+      '<td><input id="ocrs-m-' + i + '" type="number" min="0" step="1" value="' + r.mtd + '"></td>' +
+      '<td><input id="ocrs-r-' + i + '" type="number" min="0" step="1" value="' + r.ret + '"></td></tr>';
+  });
+  host.innerHTML = html + "</table><p class='muted'>Review the values — you can edit before applying.</p>";
+  $("btn-apply-ocr-sales").disabled = false;
+}
+function readOcrSalesPreview() {
+  return ocrSalesRows.map((r, i) => ({
+    product: r.product,
+    today: Math.max(0, Math.floor(Number($("ocrs-t-" + i).value) || 0)),
+    mtd: Math.max(0, Math.floor(Number($("ocrs-m-" + i).value) || 0)),
+    ret: Math.max(0, Math.floor(Number($("ocrs-r-" + i).value) || 0))
+  }));
+}
+function renderOcrTargetPreview() {
+  const host = $("ocr-target-preview");
+  if (!ocrTargetRows.length) { host.innerHTML = ""; $("btn-apply-ocr-targets").disabled = true; return; }
+  let html = '<table class="data"><tr><th>Product</th><th>Current target</th><th>New target</th></tr>';
+  ocrTargetRows.forEach((r, i) => {
+    const p = state.data.products.find((x) => x.name === r.product);
+    const cur = p ? (Number(p.target) || 0) : 0;
+    html += "<tr><td>" + escHtml(r.product) + "</td><td>" + fmtNum(cur) + "</td>" +
+      '<td><input id="ocrt-' + i + '" type="number" min="0" step="1" value="' + r.target + '"></td></tr>';
+  });
+  host.innerHTML = html + "</table><p class='muted'>Review the values — you can edit before applying.</p>";
+  $("btn-apply-ocr-targets").disabled = false;
+}
+function applyOcrSales() {
+  clearError();
+  const rdate = $("ocr-report-date").value || todayStr();
+  if (!parseDate(rdate)) { showError("Pick a valid report date."); return; }
+  const rows = readOcrSalesPreview();
+  if (!rows.length) { showError("No OCR rows to apply."); return; }
+  rows.forEach((r) => {
+    const p = state.data.products.find((x) => x.name === r.product);
+    if (!p) return;
+    state.data.salesLog = (state.data.salesLog || []).filter(
+      (e) => !(e.source === "ocr" && e.date === rdate && e.product === r.product));
+    if (r.today > 0) {
+      state.data.salesLog.push({ id: uid(), date: rdate, product: r.product, qty: r.today, source: "ocr" });
+    }
+    p.tillSale = Math.max(0, r.mtd);
+    p.tillReturn = Math.max(0, r.ret);
+  });
+  markDirty(); renderDashboard();
+  toast("Sales report applied for " + rdate);
+}
+function applyOcrTargets() {
+  clearError();
+  if (!ocrTargetRows.length) { showError("No OCR rows to apply."); return; }
+  let n = 0;
+  ocrTargetRows.forEach((r, i) => {
+    const el = $("ocrt-" + i);
+    const v = Math.max(0, Math.floor(Number(el ? el.value : r.target) || 0));
+    const p = state.data.products.find((x) => x.name === r.product);
+    if (p) { p.target = v; n++; }
+  });
+  markDirty(); renderDashboard();
+  toast("Targets updated for " + n + " products.");
+}
+async function handleSalesOcr() {
+  const f = $("ocr-sales-file").files[0];
+  if (!f) return;
+  const statusEl = $("ocr-sales-status");
+  try {
+    if (typeof Tesseract === "undefined") throw new Error("OCR engine failed to load. Check your internet connection and reload the page.");
+    statusEl.textContent = "Reading image… this may take up to a minute.";
+    const res = await Tesseract.recognize(f, "eng");
+    const text = (res && res.data && res.data.text) || "";
+    $("ocr-sales-raw").textContent = text;
+    $("ocr-sales-raw-wrap").hidden = false;
+    ocrSalesRows = parseSalesOCR(text);
+    renderOcrSalesPreview();
+    statusEl.textContent = ocrSalesRows.length
+      ? "Found " + ocrSalesRows.length + " product rows. Review and Apply."
+      : "No product rows found. Try a clearer image.";
+  } catch (e) { statusEl.textContent = ""; showError("OCR failed: " + (e.message || e)); }
+}
+async function handleTargetOcr() {
+  const files = Array.from($("ocr-target-file").files || []);
+  if (!files.length) return;
+  const statusEl = $("ocr-target-status");
+  try {
+    if (typeof Tesseract === "undefined") throw new Error("OCR engine failed to load. Check your internet connection and reload the page.");
+    let allText = "";
+    for (let i = 0; i < files.length; i++) {
+      statusEl.textContent = "Reading image " + (i + 1) + " of " + files.length + "…";
+      const res = await Tesseract.recognize(files[i], "eng");
+      allText += "\n" + ((res && res.data && res.data.text) || "");
+    }
+    $("ocr-target-raw").textContent = allText;
+    $("ocr-target-raw-wrap").hidden = false;
+    ocrTargetRows = parseTargetOCR(allText);
+    renderOcrTargetPreview();
+    statusEl.textContent = ocrTargetRows.length
+      ? "Found " + ocrTargetRows.length + " product rows. Review and Apply Targets."
+      : "No product rows found. Try clearer images.";
+  } catch (e) { statusEl.textContent = ""; showError("OCR failed: " + (e.message || e)); }
+}
+
+/* ---- Manager view ---- */
+let teamSummaries = [];
+function memberSummary(memberData) {
+  const saved = state.data;
+  try {
+    state.data = ensureDefaults(JSON.parse(JSON.stringify(memberData)));
+    const wi = workingInfo();
+    const o = overallStats(wi);
+    const products = state.data.products.map((p) => {
+      const s = productStats(p, wi);
+      return { name: p.name, target: s.target, net: s.net, achievement: s.achievement, incentive: s.incentive };
+    });
+    return { email: state.data.email || "(no email)", sale: o.sale, target: o.target, ret: o.ret,
+             achievement: o.achievement, timePct: wi.timePct, incentive: o.incentive, products };
+  } finally {
+    state.data = saved;
+  }
+}
+async function loadTeam() {
+  clearError();
+  const btn = $("btn-load-team");
+  btn.disabled = true; btn.textContent = "Loading…";
+  try {
+    const sb = getClient();
+    const { data: rows, error } = await sb.from("user_data").select("data");
+    if (error) throw error;
+    teamSummaries = (rows || []).map((r) => r.data).filter(Boolean).map(memberSummary);
+    teamSummaries.sort((a, b) => String(a.email).localeCompare(String(b.email)));
+    renderTeam();
+    $("btn-team-excel").disabled = !teamSummaries.length;
+    toast("Team loaded: " + teamSummaries.length + " member(s).");
+  } catch (e) { showError("Could not load team: " + (e.message || e)); }
+  btn.disabled = false; btn.textContent = "Load Team";
+}
+function renderTeam() {
+  const host = $("team-body");
+  host.innerHTML = "";
+  if (!teamSummaries.length) { host.innerHTML = '<span class="muted">No team data.</span>'; return; }
+  let tSale = 0, tTarget = 0, tInc = 0;
+  teamSummaries.forEach((m) => {
+    tSale += m.sale; tTarget += m.target; tInc += m.incentive;
+    const det = document.createElement("details");
+    const sum = document.createElement("summary");
+    sum.textContent = m.email + " — " + fmtNum(m.sale) + "/" + fmtNum(m.target) +
+      " (" + fmtPct(m.achievement) + "), " + fmtRs(m.incentive);
+    det.appendChild(sum);
+    const div = document.createElement("div");
+    let html = kv("Time elapsed", fmtPct(m.timePct)) + kv("Return", fmtNum(m.ret) + " packs") +
+      '<table class="data"><tr><th>Product</th><th>Target</th><th>Net</th><th>Ach.%</th><th>Incentive</th></tr>';
+    m.products.forEach((p) => {
+      html += "<tr><td>" + escHtml(p.name) + "</td><td>" + fmtNum(p.target) + "</td><td>" + fmtNum(p.net) +
+        "</td><td>" + fmtPct(p.achievement) + "</td><td>" + fmtRs(p.incentive) + "</td></tr>";
+    });
+    div.innerHTML = html + "</table>";
+    det.appendChild(div);
+    host.appendChild(det);
+  });
+  const tAch = tTarget > 0 ? (tSale / tTarget) * 100 : 0;
+  const tot = document.createElement("div");
+  tot.className = "card";
+  tot.innerHTML = "<h3>Team totals</h3>" + kv("Total sale / target", fmtNum(tSale) + " / " + fmtNum(tTarget)) +
+    kv("Team achievement", fmtPct(tAch)) + kv("Total incentive", fmtRs(tInc));
+  host.appendChild(tot);
+}
+function exportTeamExcel() {
+  clearError();
+  try {
+    if (typeof XLSX === "undefined") throw new Error("Excel library not loaded");
+    const rows = [];
+    teamSummaries.forEach((m) => {
+      m.products.forEach((p) => {
+        rows.push({ Member: m.email, Product: p.name, Target: p.target, "Net sale": p.net,
+          "Ach.%": Number(p.achievement.toFixed(1)), "Incentive (Rs)": Number(p.incentive.toFixed(2)) });
+      });
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), "Team");
+    XLSX.writeFile(wb, "team-" + todayStr() + ".xlsx");
+    toast("Team Excel downloaded.");
+  } catch (e) { showError("Team export failed: " + (e.message || e)); }
+}
+
+/* ---- UI wiring ---- */
+function wireUI() {
+  $("btn-theme").addEventListener("click", () => {
+    applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+  document.querySelectorAll("#main-tabs button").forEach((b) => {
+    b.addEventListener("click", () => switchTab(b.getAttribute("data-tab")));
+  });
+  $("btn-add-entry").addEventListener("click", addEntry);
+  $("btn-add-product").addEventListener("click", addProduct);
+  $("btn-add-holiday").addEventListener("click", addHoliday);
+  $("btn-save-override").addEventListener("click", saveOverride);
+  $("btn-clear-override").addEventListener("click", clearOverride);
+  $("btn-print-receipt").addEventListener("click", printReceipt);
+  $("btn-download-receipt").addEventListener("click", downloadReceipt);
+  $("btn-export-excel").addEventListener("click", exportExcel);
+  $("btn-new-month").addEventListener("click", (e) => {
+    armConfirm(e.target, "Start New Month", startNewMonth);
+  });
+  $("ocr-sales-file").addEventListener("change", handleSalesOcr);
+  $("ocr-target-file").addEventListener("change", handleTargetOcr);
+  $("btn-apply-ocr-sales").addEventListener("click", applyOcrSales);
+  $("btn-apply-ocr-targets").addEventListener("click", applyOcrTargets);
+  $("btn-load-team").addEventListener("click", loadTeam);
+  $("btn-team-excel").addEventListener("click", exportTeamExcel);
+}
+
+/* ---- Init ---- */
+async function init() {
+  initTheme();
+  wireAuth();
+  wireUI();
+  $("ocr-report-date").value = todayStr();
+  if ("serviceWorker" in navigator && /^https?:/.test(window.location.protocol)) {
+    navigator.serviceWorker.register("./sw.js").catch((e) => console.warn("SW register failed:", e));
+  }
+  let sb;
+  try {
+    sb = getClient();
+  } catch (e) {
+    showError(e.message);
+    showScreen("auth");
+    return;
+  }
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (window.location.hash && window.location.hash.indexOf("type=recovery") >= 0) {
+      showScreen("reset");
+    } else {
+      await onAuthChange(session);
+    }
+    sb.auth.onAuthStateChange((event, sess) => {
+      if (event === "INITIAL_SESSION") return;
+      if (event === "PASSWORD_RECOVERY") { showScreen("reset"); return; }
+      onAuthChange(sess);
+    });
+  } catch (e) {
+    showError(e.message || "Startup failed.");
+    showScreen("auth");
+  }
+  updateSyncPill();
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
