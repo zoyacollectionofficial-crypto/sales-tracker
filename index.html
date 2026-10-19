@@ -1299,18 +1299,23 @@ function matchSalesProduct(up) {
   }
   return null;
 }
-function matchTargetProduct(up) {
-  if (up.indexOf("BENNIVAIR") >= 0) {
-    if (/BENNIVAIR[-\s]?S\b/.test(up)) return "Bennivair 0.8/1.6";
+/* OCR-tolerant product matching: Tesseract often misreads letters (e.g. "IPRAVAIR-S"
+   becomes "NII PRAVAIR-S", "COMBIVAIR FORTE" becomes "comBivaRFORTE"), so match on
+   short distinctive cores instead of exact spellings. */
+function matchTargetProduct(name) {
+  const up = String(name || "").toUpperCase();
+  const letters = up.replace(/[^A-Z]/g, "");
+  if (/NNIVAIR/.test(letters)) {
+    if (/NNIVAIRS/.test(letters)) return "Bennivair 0.8/1.6";
     return "Bennivair 0.8MG";
   }
-  if (up.indexOf("COMBIVAIR") >= 0) return "Combivair Forte";
-  if (up.indexOf("IPRAVAIR") >= 0) {
-    if (/IPRAVAIR[-\s]?S\b/.test(up)) return "Ipravir S Respule";
+  if (/COMBIV/.test(letters)) return "Combivair Forte";
+  if (/PRAVAIR/.test(letters)) {
+    if (/PRAVAIRS/.test(letters)) return "Ipravir S Respule";
     return "Ipravir 0.025%";
   }
-  if (up.indexOf("KESTINE") >= 0) {
-    if (up.indexOf("LIQUID") >= 0) return "Kestine Liquid 60ml";
+  if (/KESTINE/.test(letters)) {
+    if (/LIQUID/.test(letters)) return "Kestine Liquid 60ml";
     if (/20\s?MG/.test(up)) return "Kestine 20mg";
     if (/10\s?MG/.test(up) && /20['\u2019]?S/.test(up)) return null; // 10MG 20'S pack: ambiguous, skipped
     if (/10/.test(up)) return "Kestine Tablets 10";
@@ -1318,6 +1323,22 @@ function matchTargetProduct(up) {
     return null;
   }
   return null;
+}
+
+/* Brand-total rows (e.g. a bare "KESTINE" line) carry no SKU target: skip silently.
+   Also catches OCR-garbled bare brands like "ng KESTINE" (brand present, no SKU
+   indicators such as digits or MG/ML/TABLET). */
+function isBrandTotalRow(nameTokens) {
+  const up = nameTokens.join(" ").toUpperCase();
+  const letters = up.replace(/[^A-Z]/g, "");
+  if (letters === "KESTINE" || letters === "IPRAVAIR" || letters === "BENNIVAIR") return true;
+  for (const b of ["KESTINE", "IPRAVAIR"]) {
+    if (letters.indexOf(b) >= 0) {
+      const rest = up.split(b).join("");
+      if (!/\d/.test(rest) && !/MG|ML|TABLET|LIQUID|RESPULE|FORTE|CAP|SYR|INJ|SACHET|DROP/.test(rest)) return true;
+    }
+  }
+  return false;
 }
 
 /* ---- OCR: sales report parsing ----
@@ -1372,10 +1393,14 @@ function parseTargetOCR(text) {
     if (!dataTokens.length) return;
     const target = Number(dataTokens.length >= 2 ? dataTokens[1] : dataTokens[0]);
     if (!(target >= 0)) return;
-    const namePart = nameTokens.join(" ").toUpperCase().replace(/[^A-Z]/g, "");
-    if (["KESTINE", "IPRAVAIR", "BENNIVAIR"].indexOf(namePart) >= 0) return; // brand-total row
-    const name = matchTargetProduct(nameTokens.join(" ").toUpperCase());
-    if (!name) { skipped.push(nameTokens.join(" ")); return; }
+    if (isBrandTotalRow(nameTokens)) return; // brand-total row
+    const name = matchTargetProduct(nameTokens.join(" "));
+    if (!name) {
+      const sk = nameTokens.join(" ");
+      // Show only plausible product rows in the skipped list; hide OCR punctuation fragments.
+      if (/BENNIVA|COMBIV|PRAVAIR|KESTINE/.test(sk.toUpperCase())) skipped.push(sk);
+      return;
+    }
     merged[name] = { product: name, target: target };
   });
   ocrTargetSkipped = skipped;
