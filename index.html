@@ -1305,13 +1305,13 @@ function matchSalesProduct(up) {
 function matchTargetProduct(name) {
   const up = String(name || "").toUpperCase();
   const letters = up.replace(/[^A-Z]/g, "");
-  if (/NNIVAIR/.test(letters)) {
-    if (/NNIVAIRS/.test(letters)) return "Bennivair 0.8/1.6";
+  if (/NNIV/.test(letters)) {
+    if (/NNIVA?I?R?S/.test(letters)) return "Bennivair 0.8/1.6";
     return "Bennivair 0.8MG";
   }
   if (/COMBIV/.test(letters)) return "Combivair Forte";
-  if (/PRAVAIR/.test(letters)) {
-    if (/PRAVAIRS/.test(letters)) return "Ipravir S Respule";
+  if (/PRAVAIR|PRAVAR/.test(letters)) {
+    if (/(PRAVAIR|PRAVAR)S/.test(letters)) return "Ipravir S Respule";
     return "Ipravir 0.025%";
   }
   if (/KESTINE/.test(letters)) {
