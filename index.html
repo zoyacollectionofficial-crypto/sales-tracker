@@ -176,6 +176,7 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
       <button type="button" data-tab="tab-history" data-i18n="history">History</button>
       <button type="button" data-tab="tab-upload" data-i18n="upload">Upload</button>
       <button type="button" data-tab="tab-coach" data-i18n="coach">Coach</button>
+      <button type="button" data-tab="tab-perf" id="tabbtn-perf" hidden data-i18n="myPerformance">My Performance</button>
       <button type="button" data-tab="tab-manager" id="tabbtn-manager" hidden data-i18n="team">Team</button>
     </nav>
     </div>
@@ -381,6 +382,16 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
       </div>
     </section>
 
+    <section id="tab-perf" hidden>
+      <div class="card">
+        <h2 data-i18n="myPerformance">My Performance</h2>
+        <div class="row">
+          <button id="btn-perf-refresh" type="button" class="ghost" style="flex:1" data-i18n="refresh">Refresh</button>
+        </div>
+        <div id="perf-body" style="margin-top:.6rem"></div>
+      </div>
+    </section>
+
     <section id="tab-manager" hidden>
       <div class="card">
         <h2 data-i18n="teamEntry">Team Sales Entry</h2>
@@ -400,6 +411,9 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
       <div class="card">
         <h2 data-i18n="teamOverview">Team Overview</h2>
         <div id="team-overview"></div>
+        <div class="row" style="margin-top:.6rem">
+          <button id="btn-team-reset" type="button" class="ghost" data-i18n="resetTeamData">Reset team data</button>
+        </div>
       </div>
       <div class="card">
         <h2 data-i18n="teamReport">Team Report</h2>
@@ -501,8 +515,11 @@ en: {
   qHelp: "Samajh nahi aaya. Ye puch sakte ho: mera incentive kitna hai? | aaj ki sale? | target? | projection? | working days?",
   teamEntry: "Team Sales Entry", teamEntryHint: "Teeno members ki sale ek saath likho, phir Save dabao.",
   teamOverview: "Team Overview", teamReport: "Team Report", copy: "Copy", copied: "Copied.", back: "Back", savedFor: "Saved for",
-  grossTotal: "Total sale", deduction: "deduction", netTotal: "Net sale",
-  noEntries: "Enter at least one quantity."
+  grossTotal: "Total sale", deduction: "deduction", netTotal: "Net sale", finalTotal: "Final",
+  noEntries: "Enter at least one quantity.", myPerformance: "My Performance", refresh: "Refresh",
+  loading: "Loading…", noTeamData: "No team data yet — ask your manager.", notInTeam: "Your email is not in the team list.",
+  tillDate: "Till date", resetTeamData: "Reset team data", confirmTeamReset: "Clear ALL team sales and targets? Products will be kept.",
+  teamDataCleared: "Team data cleared.", achievement: "Achievement", timePassed: "Time passed"
 },
 ur: {
   appName: "سیلز ٹریکر", dashboard: "ڈیش بورڈ", working: "کام کے دن", incentive: "انسینٹیو",
@@ -548,8 +565,11 @@ ur: {
   qHelp: "سمجھ نہیں آیا۔ یہ پوچھ سکتے ہو: میرا انسینٹیو کتنا ہے؟ | آج کی سیل؟ | ٹارگٹ؟ | تخمینہ؟ | کام کے دن؟",
   teamEntry: "ٹیم سیل انٹری", teamEntryHint: "تینوں ممبرز کی سیل ایک ساتھ لکھو، پھر سیو دباؤ۔",
   teamOverview: "ٹیم کا جائزہ", teamReport: "ٹیم رپورٹ", copy: "کاپی", copied: "کاپی ہو گیا۔", back: "واپس", savedFor: "محفوظ ہو گیا",
-  grossTotal: "کل سیل", deduction: "کٹوتی", netTotal: "خالص سیل",
-  noEntries: "کم از کم ایک مقدار لکھو۔"
+  grossTotal: "کل سیل", deduction: "کٹوتی", netTotal: "خالص سیل", finalTotal: "فائنل",
+  noEntries: "کم از کم ایک مقدار لکھو۔", myPerformance: "میری کارکردگی", refresh: "تازہ کریں",
+  loading: "لوڈ ہو رہا ہے…", noTeamData: "ابھی ٹیم کا ڈیٹا نہیں — اپنے مینیجر سے پوچھو۔", notInTeam: "تمہارا ای میل ٹیم لسٹ میں نہیں۔",
+  tillDate: "آج تک", resetTeamData: "ٹیم ڈیٹا صاف کریں", confirmTeamReset: "ٹیم کی ساری سیل اور ٹارگٹ صاف کر دوں؟ پروڈکٹس رہیں گی۔",
+  teamDataCleared: "ٹیم ڈیٹا صاف ہو گیا۔", achievement: "حصول", timePassed: "گزرا وقت"
 }
 };
 let lang = "en";
@@ -808,12 +828,13 @@ function showScreen(name) {
 }
 const TAB_I18N = {
   "tab-dashboard": "dashboard", "tab-working": "working", "tab-incentive": "incentive",
-  "tab-history": "history", "tab-upload": "upload", "tab-coach": "coach", "tab-manager": "team"
+  "tab-history": "history", "tab-upload": "upload", "tab-coach": "coach", "tab-manager": "team",
+  "tab-perf": "myPerformance"
 };
 let currentTab = "tab-dashboard";
 function switchTab(tabId) {
   currentTab = tabId;
-  ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-coach", "tab-manager"].forEach((id) => {
+  ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-coach", "tab-manager", "tab-perf"].forEach((id) => {
     $(id).hidden = id !== tabId;
   });
   document.querySelectorAll("#main-tabs button").forEach((b) => {
@@ -829,6 +850,7 @@ function switchTab(tabId) {
   if (tabId === "tab-upload") refreshReportDate();
   if (tabId === "tab-coach") renderCoach();
   if (tabId === "tab-manager") renderTeam();
+  if (tabId === "tab-perf") renderPerf();
 }
 
 /* ---- Auth ---- */
@@ -981,6 +1003,7 @@ async function checkManager() {
   } catch (e) { console.warn("manager check failed:", e.message || e); }
   if (state.user && state.user.email && state.user.email.toLowerCase() === MANAGER_EMAIL) state.isManager = true;
   $("tabbtn-manager").hidden = !state.isManager;
+  $("tabbtn-perf").hidden = state.isManager;
 }
 
 async function onAuthChange(session) {
@@ -990,7 +1013,7 @@ async function onAuthChange(session) {
     showScreen("main");
     await loadUserData();
     await checkManager();
-    switchTab("tab-dashboard");
+    switchTab(state.isManager ? "tab-dashboard" : "tab-perf");
     renderAll();
   } else {
     state.user = null;
@@ -1877,7 +1900,11 @@ function teamMembers() {
 function teamSalesByProduct(member) {
   const map = {};
   (state.data.teamLog || []).forEach((e) => {
-    if (e.member === member) map[e.product] = (map[e.product] || 0) + (Number(e.qty) || 0);
+    if (e.member === member) {
+      if (!map[e.product]) map[e.product] = { sale: 0, ret: 0 };
+      map[e.product].sale += (Number(e.qty) || 0);
+      map[e.product].ret += (Number(e.ret) || 0);
+    }
   });
   return map;
 }
@@ -1889,12 +1916,16 @@ function teamTargetOf(member, product) {
 function teamMemberStats(member, wi) {
   const sales = teamSalesByProduct(member);
   const prods = state.data.products.map((p) => {
+    const ps = sales[p.name] || { sale: 0, ret: 0 };
     const sp = { name: p.name, target: teamTargetOf(member, p.name), price: p.price,
-                 rates: p.rates, tillSale: sales[p.name] || 0, tillReturn: 0 };
+                 rates: p.rates, tillSale: ps.sale, tillReturn: ps.ret };
     return { def: p, s: productStats(sp, wi) };
   });
-  const tot = { sale: 0, target: 0, incentive: 0 };
-  prods.forEach((r) => { tot.sale += r.s.net; tot.target += r.s.target; tot.incentive += r.s.incentive; });
+  const tot = { sale: 0, gross: 0, ret: 0, target: 0, incentive: 0 };
+  prods.forEach((r) => {
+    tot.sale += r.s.net; tot.gross += r.s.gross; tot.ret += r.s.ret;
+    tot.target += r.s.target; tot.incentive += r.s.incentive;
+  });
   tot.achievement = tot.target > 0 ? (tot.sale / tot.target) * 100 : 0;
   return { prods, tot };
 }
@@ -1903,11 +1934,13 @@ function renderTeamEntry() {
   const members = teamMembers();
   const d = $("team-date");
   if (d && !d.value) d.value = todayStr();
-  let html = '<table class="data"><tr><th>' + escHtml(t("product")) + '</th>' +
-    members.map((m) => "<th>" + escHtml(m.name) + "</th>").join("") + "</tr>";
+  let html = '<table class="data"><tr><th rowspan="2">' + escHtml(t("product")) + '</th>' +
+    members.map((m) => '<th colspan="2">' + escHtml(m.name) + "</th>").join("") + "</tr><tr>" +
+    members.map(() => "<th>" + escHtml(t("sale")) + "</th><th>" + escHtml(t("ret")) + "</th>").join("") + "</tr>";
   state.data.products.forEach((p, pi) => {
     html += "<tr><td>" + escHtml(p.name) + "</td>" + members.map((m, mi) =>
-      '<td><input id="tm-' + mi + '-' + pi + '" type="number" min="0" step="1" placeholder="0" style="width:64px"></td>'
+      '<td><input id="tm-' + mi + '-' + pi + '-s" type="number" min="0" step="1" placeholder="0" style="width:52px"></td>' +
+      '<td><input id="tm-' + mi + '-' + pi + '-r" type="number" min="0" step="1" placeholder="0" style="width:52px"></td>'
     ).join("") + "</tr>";
   });
   $("team-entry-table").innerHTML = html + "</table>";
@@ -1920,28 +1953,33 @@ function saveTeamEntries() {
     const date = ($("team-date").value || todayStr());
     if (!parseDate(date)) { showError("Pick a valid date."); return; }
     let n = 0;
-    const perMember = members.map(() => 0);
+    const perMember = members.map(() => ({ sale: 0, ret: 0 }));
     state.data.products.forEach((p, pi) => {
       members.forEach((m, mi) => {
-        const el = $("tm-" + mi + "-" + pi);
-        const q = Math.max(0, Math.floor(Number(el && el.value) || 0));
-        if (q > 0) {
-          state.data.teamLog.push({ id: uid(), date: date, member: m.name, product: p.name, qty: q });
-          perMember[mi] += q; n++;
+        const s = Math.max(0, Math.floor(Number(($("tm-" + mi + "-" + pi + "-s") || {}).value) || 0));
+        const r = Math.max(0, Math.floor(Number(($("tm-" + mi + "-" + pi + "-r") || {}).value) || 0));
+        if (s > 0 || r > 0) {
+          state.data.teamLog.push({ id: uid(), date: date, member: m.name, product: p.name, qty: s, ret: r });
+          perMember[mi].sale += s; perMember[mi].ret += r; n++;
         }
       });
     });
     if (!n) { showError(t("noEntries")); return; }
     markDirty();
-    renderTeamEntry(); renderTeamOverview();
-    const gross = perMember.reduce((a, b) => a + b, 0);
-    const ded = Math.round(gross * TEAM_DEDUCT_PCT) / 100;
-    const net = Math.round((gross - ded) * 100) / 100;
+    renderTeamEntry(); renderTeamOverview(); renderTeamReport();
+    const tSale = perMember.reduce((a, b) => a + b.sale, 0);
+    const tRet = perMember.reduce((a, b) => a + b.ret, 0);
+    const net = tSale - tRet;
+    const ded = Math.round(net * TEAM_DEDUCT_PCT) / 100;
+    const final = Math.round((net - ded) * 100) / 100;
     let html = '<div class="today-box"><b>' + escHtml(t("savedFor")) + " " + escHtml(date) + "</b><br>";
-    members.forEach((m, mi) => { html += escHtml(m.name) + ": " + perMember[mi] + " packs<br>"; });
-    html += "<b>" + escHtml(t("grossTotal")) + ": " + gross + " &nbsp;|&nbsp; " +
+    members.forEach((m, mi) => {
+      html += escHtml(m.name) + ": " + perMember[mi].sale + " sale, " + perMember[mi].ret + " ret<br>";
+    });
+    html += "<b>" + escHtml(t("grossTotal")) + ": " + tSale + " &nbsp;|&nbsp; " + escHtml(t("ret")) + ": " + tRet +
+      " &nbsp;|&nbsp; " + escHtml(t("netTotal")) + ": " + net + "<br>" +
       TEAM_DEDUCT_PCT + "% " + escHtml(t("deduction")) + ": &minus;" + ded + " &nbsp;|&nbsp; " +
-      escHtml(t("netTotal")) + ": " + net + "</b></div>";
+      escHtml(t("finalTotal")) + ": " + final + "</b></div>";
     $("team-save-summary").innerHTML = html;
     toast(t("appliedFor") + date + ".");
   } catch (e) { showError("Save failed: " + (e && e.message || e)); }
@@ -1950,19 +1988,23 @@ function renderTeamOverview() {
   if (!state.data) return;
   const wi = workingInfo();
   const members = teamMembers();
-  let html = "", gSale = 0, gTarget = 0, gInc = 0;
+  let html = "", gSale = 0, gRet = 0, gTarget = 0, gInc = 0;
   members.forEach((m) => {
     const st = teamMemberStats(m.name, wi);
-    gSale += st.tot.sale; gTarget += st.tot.target; gInc += st.tot.incentive;
+    gSale += st.tot.gross; gRet += st.tot.ret; gTarget += st.tot.target; gInc += st.tot.incentive;
     html += '<div class="today-box" style="cursor:pointer" data-member="' + escHtml(m.name) + '">' +
       "<b>" + escHtml(m.name) + "</b><br>" +
-      '<span class="muted">' + st.tot.sale + "/" + st.tot.target + " (" + Math.round(st.tot.achievement) + "%) &middot; " +
-      fmtRs(st.tot.incentive) + "</span></div>";
+      '<span class="muted">' + escHtml(t("tillDate")) + ": " + st.tot.gross + " sale, " + st.tot.ret + " ret, " +
+      escHtml(t("netTotal")) + " " + st.tot.sale + "/" + st.tot.target +
+      " (" + Math.round(st.tot.achievement) + "%) &middot; " + fmtRs(st.tot.incentive) + "</span></div>";
   });
-  const ded = Math.round(gSale * TEAM_DEDUCT_PCT) / 100;
+  const net = gSale - gRet;
+  const ded = Math.round(net * TEAM_DEDUCT_PCT) / 100;
   html += '<div class="kv"><span><b>' + escHtml(t("grossTotal")) + "</b></span><b>" + gSale + " packs</b></div>" +
+    '<div class="kv"><span>' + escHtml(t("ret")) + "</span><b>" + gRet + " packs</b></div>" +
+    '<div class="kv"><span><b>' + escHtml(t("netTotal")) + "</b></span><b>" + net + " packs</b></div>" +
     '<div class="kv"><span>' + TEAM_DEDUCT_PCT + "% " + escHtml(t("deduction")) + "</span><b>&minus;" + ded + "</b></div>" +
-    '<div class="kv"><span><b>' + escHtml(t("netTotal")) + "</b></span><b>" + (Math.round((gSale - ded) * 100) / 100) + " packs</b></div>";
+    '<div class="kv"><span><b>' + escHtml(t("finalTotal")) + "</b></span><b>" + (Math.round((net - ded) * 100) / 100) + " packs</b></div>";
   const host = $("team-overview");
   host.innerHTML = html;
   host.querySelectorAll("[data-member]").forEach((el) => {
@@ -1975,11 +2017,13 @@ function showTeamMember(name) {
   const st = teamMemberStats(name, wi);
   $("team-member-title").textContent = name;
   let html = '<table class="data"><tr><th>' + escHtml(t("product")) + "</th><th>" + escHtml(t("target")) +
-    "</th><th>" + escHtml(t("achievedCol")) + "</th><th>" + escHtml(t("incentiveCol")) + "</th></tr>";
+    "</th><th>" + escHtml(t("sale")) + "</th><th>" + escHtml(t("ret")) + "</th><th>" +
+    escHtml(t("achievedCol")) + "</th><th>" + escHtml(t("incentiveCol")) + "</th></tr>";
   st.prods.forEach((r) => {
     html += "<tr><td>" + escHtml(r.def.name) + "</td>" +
       '<td><input data-tm="' + escHtml(name) + '" data-tp="' + escHtml(r.def.name) + '" type="number" min="0" step="1" value="' +
       teamTargetOf(name, r.def.name) + '" style="width:64px" class="team-target-input"></td>' +
+      "<td>" + r.s.gross + "</td><td>" + r.s.ret + "</td>" +
       "<td>" + r.s.net + " (" + Math.round(r.s.achievement) + "%)</td>" +
       "<td>" + fmtRs(r.s.incentive) + "</td></tr>";
   });
@@ -2019,7 +2063,7 @@ function teamTotalsByProduct() {
   const map = {};
   state.data.products.forEach((p) => { map[p.name] = { sale: 0, target: 0, price: Number(p.price) || 0 }; });
   (state.data.teamLog || []).forEach((e) => {
-    if (map[e.product]) map[e.product].sale += (Number(e.qty) || 0);
+    if (map[e.product]) map[e.product].sale += (Number(e.qty) || 0) - (Number(e.ret) || 0);
   });
   const tt = state.data.teamTargets || {};
   Object.keys(tt).forEach((m) => {
@@ -2072,6 +2116,50 @@ function fallbackCopyTeamReport(txt, done) {
 }
 function sendTeamReportWhatsApp() {
   window.open("https://wa.me/?text=" + encodeURIComponent(buildTeamReport()), "_blank");
+}
+
+/* ---- My Performance (team members): reads the manager's shared row ---- */
+let sharedTeamData = null;
+async function renderPerf() {
+  const host = $("perf-body");
+  if (!host || !state.user) return;
+  host.innerHTML = '<span class="muted">' + escHtml(t("loading")) + "</span>";
+  try {
+    const sb = getClient();
+    const { data: rows, error } = await sb.from("user_data").select("user_id, data");
+    if (error) throw error;
+    const mgr = (rows || []).find((r) => r.data && Array.isArray(r.data.teamMembers) && r.data.teamMembers.length);
+    if (!mgr) { host.innerHTML = '<span class="muted">' + escHtml(t("noTeamData")) + "</span>"; return; }
+    const email = (state.user.email || "").toLowerCase();
+    const me = mgr.data.teamMembers.find((m) => (m.email || "").toLowerCase() === email);
+    if (!me) { host.innerHTML = '<span class="muted">' + escHtml(t("notInTeam")) + "</span>"; return; }
+    sharedTeamData = mgr.data;
+    const saved = state.data;
+    state.data = ensureDefaults(JSON.parse(JSON.stringify(mgr.data)));
+    try {
+      const wi = workingInfo();
+      const st = teamMemberStats(me.name, wi);
+      let html = "<h3>" + escHtml(me.name) + "</h3>" +
+        kv(escHtml(t("tillDate")) + " (" + escHtml(t("sale")) + ")", st.tot.gross + " packs") +
+        kv(escHtml(t("ret")), st.tot.ret + " packs") +
+        kv(escHtml(t("netTotal")) + " / " + escHtml(t("target")), st.tot.sale + " / " + st.tot.target) +
+        kv(escHtml(t("achievement")), Math.round(st.tot.achievement) + "%") +
+        kv(escHtml(t("incentiveCol")), fmtRs(st.tot.incentive)) +
+        kv(escHtml(t("timePassed")), Math.round(wi.timePct) + "%");
+      html += '<table class="data" style="margin-top:.6rem"><tr><th>' + escHtml(t("product")) + "</th><th>" +
+        escHtml(t("target")) + "</th><th>" + escHtml(t("sale")) + "</th><th>" + escHtml(t("ret")) + "</th><th>" +
+        escHtml(t("achievedCol")) + "</th><th>" + escHtml(t("incentiveCol")) + "</th></tr>";
+      st.prods.forEach((r) => {
+        html += "<tr><td>" + escHtml(r.def.name) + "</td><td>" + r.s.target + "</td><td>" + r.s.gross +
+          "</td><td>" + r.s.ret + "</td><td>" + r.s.net + " (" + Math.round(r.s.achievement) + "%)</td><td>" +
+          fmtRs(r.s.incentive) + "</td></tr>";
+      });
+      html += "</table>";
+      host.innerHTML = html;
+    } finally { state.data = saved; }
+  } catch (e) {
+    host.innerHTML = '<span class="muted">Error: ' + escHtml(e.message || e) + "</span>";
+  }
 }
 
 /* ---- UI wiring ---- */
@@ -2343,6 +2431,13 @@ function wireUI() {
   $("btn-team-back").addEventListener("click", () => { $("team-member-card").hidden = true; });
   $("btn-team-report-copy").addEventListener("click", copyTeamReport);
   $("btn-team-report-wa").addEventListener("click", sendTeamReportWhatsApp);
+  $("btn-perf-refresh").addEventListener("click", renderPerf);
+  $("btn-team-reset").addEventListener("click", () => {
+    if (!state.data || !confirm(t("confirmTeamReset"))) return;
+    state.data.teamLog = [];
+    state.data.teamTargets = {};
+    markDirty(); renderTeam(); toast(t("teamDataCleared"));
+  });
 }
 
 /* ---- Init ---- */
