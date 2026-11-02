@@ -2115,6 +2115,12 @@ function sendTeamReportWhatsApp() {
 /* Pure + testable: merge master products/targets/new entries into a member's data. */
 function buildMemberSync(memberName, memberData, master) {
   const md = ensureDefaults(JSON.parse(JSON.stringify(memberData || {})));
+  /* Month-aware: only the CURRENT calendar month's entries sync and count.
+     Last month's team entries must never resurrect after a member starts a
+     new month (or while the manager has not reset team data yet). */
+  const nowD = new Date();
+  const mPre = nowD.getFullYear() + "-" + String(nowD.getMonth() + 1).padStart(2, "0");
+  const inMonth = (d) => typeof d === "string" && d.indexOf(mPre) === 0;
   const tt = (master.teamTargets && master.teamTargets[memberName]) || {};
   if (Array.isArray(master.products) && master.products.length) {
     md.products = master.products.map((p) => ({
@@ -2130,6 +2136,7 @@ function buildMemberSync(memberName, memberData, master) {
   const have = new Set(md.salesLog.map((e) => e.teamEntryId).filter(Boolean));
   (master.teamLog || []).forEach((e) => {
     if (e.member !== memberName) return;
+    if (!inMonth(e.date)) return;
     const s = Number(e.qty) || 0, r = Number(e.ret) || 0;
     if (s > 0 && !have.has(e.id)) {
       md.salesLog.push({ id: uid(), date: e.date, product: e.product, qty: s, teamEntryId: e.id, source: "team" });
@@ -2140,9 +2147,11 @@ function buildMemberSync(memberName, memberData, master) {
       have.add(e.id + "-r");
     }
   });
-  /* Recompute tillSale/tillReturn from the full log (idempotent, keeps member's own entries). */
+  /* Recompute tillSale/tillReturn from the current month's log entries only
+     (idempotent, keeps member's own entries). */
   md.products.forEach((p) => { p.tillSale = 0; p.tillReturn = 0; });
   md.salesLog.forEach((e) => {
+    if (!inMonth(e.date)) return;
     const p = md.products.find((x) => x.name === e.product);
     if (!p) return;
     const q = Number(e.qty) || 0;
