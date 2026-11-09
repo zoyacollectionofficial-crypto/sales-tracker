@@ -119,10 +119,11 @@ details summary{cursor:pointer; font-weight:600; font-size:.88rem;}
 
 /* ===== Glass theme (2026-11-09, TikTok glass-dashboard style) ===== */
 :root{
-  --glass:rgba(255,255,255,.55);
+  --glass:rgba(255,255,255,.45);
   --glass-strong:rgba(255,255,255,.85);
   --glass-border:rgba(255,255,255,.7);
-  --input-bg:rgba(255,255,255,.55);
+  --input-bg:rgba(255,255,255,.5);
+  --input-border:rgba(100,116,139,.38);
   --glass-shadow:0 8px 32px rgba(13,84,74,.12), 0 1.5px 6px rgba(13,84,74,.06);
 }
 html[data-theme="dark"]{
@@ -130,12 +131,14 @@ html[data-theme="dark"]{
   --glass-strong:rgba(13,22,40,.88);
   --glass-border:rgba(148,163,184,.22);
   --input-bg:rgba(255,255,255,.06);
+  --input-border:rgba(148,163,184,.35);
   --glass-shadow:0 8px 32px rgba(0,0,0,.45), 0 1.5px 6px rgba(0,0,0,.3);
 }
 body{
   background:
-    radial-gradient(560px 420px at 12% -6%, rgba(45,212,191,.30), rgba(45,212,191,0) 60%),
-    radial-gradient(520px 420px at 105% 12%, rgba(251,191,36,.22), rgba(251,191,36,0) 60%),
+    radial-gradient(560px 420px at 12% -6%, rgba(45,212,191,.42), rgba(45,212,191,0) 60%),
+    radial-gradient(520px 420px at 105% 12%, rgba(251,191,36,.30), rgba(251,191,36,0) 60%),
+    radial-gradient(620px 480px at 50% 38%, rgba(20,184,166,.20), rgba(20,184,166,0) 65%),
     radial-gradient(700px 600px at 50% 115%, rgba(15,118,110,.16), rgba(15,118,110,0) 60%),
     linear-gradient(160deg,#e9f7f1 0%,#f7f4e8 55%,#eef2fb 100%);
   background-attachment:fixed;
@@ -153,7 +156,7 @@ html[data-theme="dark"] body{
   -webkit-backdrop-filter:blur(18px) saturate(1.5);
   backdrop-filter:blur(18px) saturate(1.5);
   border:1px solid var(--glass-border);
-  box-shadow:var(--glass-shadow);
+  box-shadow:var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.55);
 }
 .card{border-radius:20px;}
 header.topbar{border-bottom:1px solid var(--glass-border);}
@@ -184,7 +187,7 @@ nav.tabs button:hover{background:rgba(15,118,110,.08);}
 html[data-theme="dark"] nav.tabs button:hover{background:rgba(148,163,184,.12);}
 nav.tabs button.active{background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--glass-border);}
 input[type=text],input[type=email],input[type=password],input[type=number],input[type=date],select{
-  background:var(--input-bg); border-color:var(--glass-border); border-radius:12px;
+  background:var(--input-bg); border-color:var(--input-border); border-radius:12px;
 }
 button{background:linear-gradient(135deg,#0d9488,#0f766e); box-shadow:0 4px 14px rgba(13,148,136,.28);}
 html[data-theme="dark"] button{background:linear-gradient(135deg,#0d9488,#115e59);}
