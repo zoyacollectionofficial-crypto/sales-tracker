@@ -1089,6 +1089,17 @@ function hcShareImage(id) {
     cv.toBlob((blob) => {
       let file = null;
       if (blob) { try { file = new File([blob], "receipt-" + v.no + ".png", { type: "image/png" }); } catch (e) {} }
+      if (blob && window.AndroidShare && window.AndroidShare.shareWhatsAppImage) {
+        const rd = new FileReader();
+        rd.onload = () => {
+          const b64 = String(rd.result || "").split(",")[1] || "";
+          if (b64) { try { window.AndroidShare.shareWhatsAppImage(b64, "receipt-" + v.no + ".png", "Handcarry Invoice " + v.no + " - " + v.party); return; } catch (e) {} }
+          hcDeliverImage(file, blob, v);
+        };
+        rd.onerror = () => hcDeliverImage(file, blob, v);
+        rd.readAsDataURL(blob);
+        return;
+      }
       hcDeliverImage(file, blob, v);
     }, "image/png");
     };
