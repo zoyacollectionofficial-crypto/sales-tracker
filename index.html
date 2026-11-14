@@ -1022,9 +1022,9 @@ function renderHcList() {
   const aDisc = list.reduce((a, v) => a + (Number(v.ownDiscount) || 0), 0);
   box.innerHTML = '<div class="today-box">🤝 Apna diya gaya discount — is month: <b>' + fmtRs(mDisc) + "</b> &nbsp;·&nbsp; All time: <b>" + fmtRs(aDisc) + "</b></div>" +
   '<table class="data"><thead><tr><th>No</th><th>Date</th><th>Party</th><th>Net</th><th>Received</th><th>Balance</th><th></th></tr></thead><tbody>' +
-    list.map((v, ix) => `<tr><td>${escHtml(v.no)}</td><td>${escHtml(v.date)}</td><td>${escHtml(v.party)}</td><td>${fmtRs(v.net)}</td><td>${fmtRs(v.received)}</td><td>${fmtRs(v.balance)}</td><td style="white-space:nowrap"><button type="button" class="ghost small" data-hcprint="${ix}">🖨️ Receipt</button> <button type="button" class="ghost small" data-hcwa="${ix}">WhatsApp</button> <button type="button" class="danger small" data-hcdel="${ix}">✕</button></td></tr>`).join("") + "</tbody></table>";
+    list.map((v, ix) => `<tr><td>${escHtml(v.no)}</td><td>${escHtml(v.date)}</td><td>${escHtml(v.party)}</td><td>${fmtRs(v.net)}</td><td>${fmtRs(v.received)}</td><td>${fmtRs(v.balance)}</td><td style="white-space:nowrap"><button type="button" class="ghost small" data-hcprint="${ix}">🖨️ Receipt</button> <button type="button" class="ghost small" data-hcwa="${ix}">📷 Image</button> <button type="button" class="danger small" data-hcdel="${ix}">✕</button></td></tr>`).join("") + "</tbody></table>";
   box.querySelectorAll("[data-hcprint]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcprint")]; if (v) hcPrint(v.id); }));
-  box.querySelectorAll("[data-hcwa]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcwa")]; if (v) hcWhatsApp(v.id); }));
+  box.querySelectorAll("[data-hcwa]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcwa")]; if (v) hcShareImage(v.id); }));
   box.querySelectorAll("[data-hcdel]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcdel")]; if (v && confirm("Ye invoice delete kar dein?")) { state.data.handcarry = state.data.handcarry.filter((x) => x.id !== v.id); markDirty(); renderHandcarry(); } }));
 }
 function hcInvoiceHtml(v) {
@@ -1036,16 +1036,74 @@ function hcInvoiceHtml(v) {
     (v.ownDiscount ? "<br>My own discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : "") + ": <b>− " + fmtRs(v.ownDiscount) + "</b>" : "") +
     "<br>Net payable: <b>" + fmtRs(v.net) + "</b><br>Received: " + fmtRs(v.received) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(v.balance) + "</b></p>";
 }
-function hcPrint(id) { const v = (state.data.handcarry || []).find((x) => x.id === id); if (!v) return; $("screen-receipt-print").innerHTML = hcInvoiceHtml(v); window.print(); }
-function hcWhatsApp(id) {
-  const v = (state.data.handcarry || []).find((x) => x.id === id); if (!v) return;
-  const lines = ["*Handcarry Invoice " + v.no + "*", "Party: " + v.party, "Date: " + v.date, ""];
-  v.items.forEach((it) => lines.push(it.name + " — " + it.qty + " × " + fmtRs(it.rate) + " = " + fmtRs(it.qty * it.rate)));
-  lines.push("", "Subtotal: " + fmtRs(v.subtotal));
-  if (v.minus145) lines.push("Less 14.5%: − " + fmtRs(v.minus145));
-  if (v.ownDiscount) lines.push("My discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : "") + ": − " + fmtRs(v.ownDiscount));
-  lines.push("Net: " + fmtRs(v.net), "Received: " + fmtRs(v.received), "Balance: " + fmtRs(v.balance));
-  window.open("https://wa.me/?text=" + encodeURIComponent(lines.join("\n")), "_blank");
+function hcPrint(id) { const v = (state.data.handcarry || []).find((x) => x.id === id); if (!v) return; $("screen-receipt-print").innerHTML = hcInvoiceHtml(v); appPrint(); }
+function hcShareImage(id) {
+  const v = (state.data.handcarry || []).find((x) => x.id === id);
+  if (!v) return;
+  try {
+    const W = 920, PAD = 40, LH = 36;
+    const rows = 9 + v.items.length + (v.minus145 ? 1 : 0) + (v.ownDiscount ? 1 : 0);
+    const cv = document.createElement("canvas");
+    cv.width = W; cv.height = PAD * 2 + rows * LH + 40;
+    const g = cv.getContext("2d");
+    if (!g || !cv.toBlob) throw new Error("canvas unsupported");
+    g.fillStyle = "#ffffff"; g.fillRect(0, 0, cv.width, cv.height);
+    g.fillStyle = "#0f766e"; g.fillRect(0, 0, W, 86);
+    g.fillStyle = "#ffffff"; g.textAlign = "left"; g.font = "bold 32px Arial";
+    g.fillText("HANDCARRY INVOICE", PAD, 54);
+    g.textAlign = "right"; g.font = "bold 30px Arial";
+    g.fillText(v.no, W - PAD, 54);
+    g.textAlign = "left"; g.fillStyle = "#111111";
+    let y = 86 + 48;
+    g.font = "24px Arial";
+    g.fillText("Party: " + v.party, PAD, y); y += LH;
+    g.fillText("Date: " + v.date, PAD, y); y += LH + 6;
+    const div = (yy) => { g.strokeStyle = "#999999"; g.beginPath(); g.moveTo(PAD, yy); g.lineTo(W - PAD, yy); g.stroke(); };
+    div(y - 22);
+    g.font = "bold 23px Arial";
+    g.fillText("Product", PAD, y); g.fillText("Qty", 545, y); g.fillText("Rate", 640, y);
+    g.textAlign = "right"; g.fillText("Amount", W - PAD, y); g.textAlign = "left"; y += LH;
+    g.font = "24px Arial";
+    v.items.forEach((it) => {
+      let nm = it.name || ""; if (nm.length > 30) nm = nm.slice(0, 29) + "...";
+      g.fillText(nm, PAD, y);
+      g.fillText(String(it.qty), 545, y);
+      g.fillText(fmtRs(it.rate), 640, y);
+      g.textAlign = "right"; g.fillText(fmtRs((Number(it.qty) || 0) * (Number(it.rate) || 0)), W - PAD, y); g.textAlign = "left";
+      y += LH;
+    });
+    div(y - 22);
+    const tot = (label, val, bold) => { g.font = (bold ? "bold " : "") + "24px Arial"; g.fillText(label, PAD, y); g.textAlign = "right"; g.fillText(val, W - PAD, y); g.textAlign = "left"; y += LH; };
+    tot("Subtotal", fmtRs(v.subtotal));
+    if (v.minus145) tot("Less 14.5%", "- " + fmtRs(v.minus145));
+    if (v.ownDiscount) tot("My discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : ""), "- " + fmtRs(v.ownDiscount));
+    tot("Net payable", fmtRs(v.net), true);
+    tot("Received", fmtRs(v.received));
+    tot("Balance", fmtRs(v.balance), true);
+    y += 10;
+    g.font = "20px Arial"; g.fillStyle = "#555555";
+    g.fillText("Sales Tracker - " + (state.user ? state.user.email : ""), PAD, y);
+    cv.toBlob((blob) => {
+      let file = null;
+      if (blob) { try { file = new File([blob], "receipt-" + v.no + ".png", { type: "image/png" }); } catch (e) {} }
+      hcDeliverImage(file, blob, v);
+    }, "image/png");
+  } catch (e) { hcDeliverImage(null, null, v); }
+}
+function hcDeliverImage(file, blob, v) {
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({ files: [file], title: "Receipt " + v.no }).catch(() => {});
+    return;
+  }
+  if (blob) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "receipt-" + v.no + ".png";
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("Receipt image download ho gayi - WhatsApp par attach karke bhej dein");
+    return;
+  }
+  toast("Is device par image nahi ban saki - Print wala button use karein");
 }
 /* ---- Auth ---- */
 async function handleLogin() {
@@ -1675,6 +1733,10 @@ function renderReceipt() {
   html += "</table>" + kv("Total incentive", fmtRs(r.o.incentive)) + kv("Total sale value", fmtRs(r.o.saleValue));
   $("receipt-body").innerHTML = html;
 }
+function appPrint() {
+  if (window.AndroidPrint && window.AndroidPrint.printPage) { try { window.AndroidPrint.printPage(); return; } catch (e) {} }
+  window.print();
+}
 function printReceipt() {
   const r = receiptData();
   let html = "<h2>Sales Tracker — Receipt</h2>" +
@@ -1686,7 +1748,7 @@ function printReceipt() {
   });
   html += "</table><p><b>Total incentive: " + fmtRs(r.o.incentive) + "</b> &nbsp;|&nbsp; Total sale value: " + fmtRs(r.o.saleValue) + "</p>";
   $("screen-receipt-print").innerHTML = html;
-  window.print();
+  appPrint();
 }
 function downloadReceipt() {
   const r = receiptData();
