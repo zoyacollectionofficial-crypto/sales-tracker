@@ -2,8 +2,8 @@
 // App files (same origin): network-first with a 4s timeout, fall back to cache.
 // CDN static assets (jsdelivr etc.): cache-first.
 // API calls (Supabase, auth, anything else): NEVER cached, always network.
-const APP_CACHE = 'sales-tracker-app-v3';
-const CDN_CACHE = 'sales-tracker-cdn-v3';
+const APP_CACHE = 'sales-tracker-app-v4';
+const CDN_CACHE = 'sales-tracker-cdn-v4';
 const APP_FILES = ['./', './index.html', './manifest.json', './sw.js'];
 
 // Static-asset CDNs only. Never add API hosts here: caching API responses

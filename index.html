@@ -258,6 +258,7 @@ details{background:var(--glass); border-color:var(--glass-border);}
       <button type="button" data-tab="tab-history" data-i18n="history">History</button>
       <button type="button" data-tab="tab-upload" data-i18n="upload">Upload</button>
       <button type="button" data-tab="tab-coach" data-i18n="coach">Coach</button>
+      <button type="button" data-tab="tab-handcarry" data-i18n="handcarry">Handcarry</button>
       <button type="button" data-tab="tab-manager" id="tabbtn-manager" hidden data-i18n="team">Team</button>
     </nav>
     </div>
@@ -509,6 +510,41 @@ details{background:var(--glass); border-color:var(--glass-border);}
   </div>
 </div>
 
+<section id="tab-handcarry" hidden>
+      <div class="card">
+        <h2>🧳 Handcarry Invoice</h2>
+        <div class="grid2">
+          <div><label class="f" for="hc-party">Party / Doctor name</label><input id="hc-party" type="text" placeholder="e.g. Dr. Ahmed — City Hospital"></div>
+          <div><label class="f" for="hc-date">Date</label><input id="hc-date" type="date"></div>
+        </div>
+        <div id="hc-items" style="margin-top:.5rem"></div>
+        <button type="button" class="ghost small" id="hc-add-item">+ Add product</button>
+        <div class="grid2" style="margin-top:.6rem">
+          <div><label class="f" for="hc-discount">My own discount (Rs)</label><input id="hc-discount" type="number" min="0" step="any" value="0"></div>
+          <div><label class="f" for="hc-received">Received (Rs)</label><input id="hc-received" type="number" min="0" step="any" value="0"></div>
+        </div>
+        <div id="hc-totals" class="today-box"></div>
+        <button type="button" id="hc-save">💾 Save Invoice</button>
+        <p style="font-size:.85rem; color:var(--muted)">14.5% invoice se khud minus ho jata hai aur alag line mein nazar aata hai.</p>
+      </div>
+      <div class="card">
+        <h2>📋 Handcarry Invoices</h2>
+        <div id="hc-list"></div>
+      </div>
+      <div class="card">
+        <h2>🤝 Compulsion</h2>
+        <p style="font-size:.85rem; color:var(--muted)">Ye handcarry invoice se <b>bilkul alag</b> record hai — jo paise aap ne apne paas se diye, sirf yahan likhein.</p>
+        <div class="grid2">
+          <div><label class="f" for="cp-party">Party / kis ko diya</label><input id="cp-party" type="text"></div>
+          <div><label class="f" for="cp-amount">Amount (Rs)</label><input id="cp-amount" type="number" min="0" step="any"></div>
+          <div><label class="f" for="cp-date">Date</label><input id="cp-date" type="date"></div>
+          <div><label class="f" for="cp-note">Note</label><input id="cp-note" type="text"></div>
+        </div>
+        <button type="button" id="cp-add" style="margin-top:.5rem">+ Add Entry</button>
+        <div id="cp-list" style="margin-top:.6rem"></div>
+      </div>
+    </section>
+
 <div id="screen-receipt-print"></div>
 <div id="toast"></div>
 
@@ -549,7 +585,7 @@ const DEFAULT_PRODUCTS = [
 const STR = {
 en: {
   appName: "Sales Tracker", dashboard: "Dashboard", working: "Working Days", incentive: "Incentive",
-  history: "History", upload: "Upload", team: "Team", coach: "Coach", theme: "Theme", logout: "Logout",
+  history: "History", upload: "Upload", team: "Team", coach: "Coach", handcarry: "Handcarry", theme: "Theme", logout: "Logout",
   login: "Login", signup: "Sign up", email: "Email", password: "Password", forgot: "Forgot password?",
   addSaleReturn: "Add Sale / Return", product: "Product", type: "Type", sale: "Sale", ret: "Return",
   qty: "Quantity", date: "Date", add: "Add", target: "Target", price: "Price", tillSale: "Till sale",
@@ -599,7 +635,7 @@ en: {
 },
 ur: {
   appName: "سیلز ٹریکر", dashboard: "ڈیش بورڈ", working: "کام کے دن", incentive: "انسینٹیو",
-  history: "ہسٹری", upload: "اپ لوڈ", team: "ٹیم", coach: "مشورہ", theme: "تھیم", logout: "لاگ آؤٹ",
+  history: "ہسٹری", upload: "اپ لوڈ", team: "ٹیم", coach: "مشورہ", handcarry: "ہینڈ کیری", theme: "تھیم", logout: "لاگ آؤٹ",
   login: "لاگ اِن", signup: "اکاؤنٹ بنائیں", email: "ای میل", password: "پاس ورڈ", forgot: "پاس ورڈ بھول گئے؟",
   addSaleReturn: "فروخت / واپسی شامل کریں", product: "پروڈکٹ", type: "قسم", sale: "فروخت", ret: "واپسی",
   qty: "مقدار", date: "تاریخ", add: "شامل کریں", target: "ٹارگٹ", price: "قیمت", tillSale: "اب تک فروخت",
@@ -771,6 +807,8 @@ function defaultData(email) {
     email: email || "",
     products: DEFAULT_PRODUCTS.map(makeProduct),
     salesLog: [],
+    handcarry: [],
+    compulsion: [],
     holidays: [],
     workOverride: null,
     history: []
@@ -783,6 +821,8 @@ function ensureDefaults(data) {
   if (!data || typeof data !== "object") return defaultData("");
   if (!Array.isArray(data.products)) data.products = [];
   if (!Array.isArray(data.salesLog)) data.salesLog = [];
+  if (!Array.isArray(data.handcarry)) data.handcarry = [];
+  if (!Array.isArray(data.compulsion)) data.compulsion = [];
   if (!Array.isArray(data.holidays)) data.holidays = [];
   if (!Array.isArray(data.history)) data.history = [];
   if (!Array.isArray(data.teamMembers) || !data.teamMembers.length) {
@@ -905,12 +945,12 @@ function showScreen(name) {
 }
 const TAB_I18N = {
   "tab-dashboard": "dashboard", "tab-working": "working", "tab-incentive": "incentive",
-  "tab-history": "history", "tab-upload": "upload", "tab-coach": "coach", "tab-manager": "team"
+  "tab-history": "history", "tab-upload": "upload", "tab-coach": "coach", "tab-manager": "team", "tab-handcarry": "handcarry"
 };
 let currentTab = "tab-dashboard";
 function switchTab(tabId) {
   currentTab = tabId;
-  ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-coach", "tab-manager"].forEach((id) => {
+  ["tab-dashboard", "tab-working", "tab-incentive", "tab-history", "tab-upload", "tab-coach", "tab-manager", "tab-handcarry"].forEach((id) => {
     $(id).hidden = id !== tabId;
   });
   document.querySelectorAll("#main-tabs button").forEach((b) => {
@@ -926,6 +966,120 @@ function switchTab(tabId) {
   if (tabId === "tab-upload") refreshReportDate();
   if (tabId === "tab-coach") renderCoach();
   if (tabId === "tab-manager") renderTeam();
+  if (tabId === "tab-handcarry") renderHandcarry();
+}
+
+
+/* ================= HANDCARRY INVOICES + COMPULSION ================= */
+const HC_RATE = 14.5;
+let hcItems = [];
+function hcUid() { return "hc" + Date.now().toString(36) + Math.floor(Math.random() * 9999); }
+function renderHandcarry() {
+  if (!state.data) return;
+  if (!$("hc-date").value) $("hc-date").value = todayStr();
+  if (!$("cp-date").value) $("cp-date").value = todayStr();
+  if (!hcItems.length) hcAddItem();
+  renderHcItems(); renderHcList(); renderCpList();
+}
+function hcAddItem() {
+  const p = (state.data && state.data.products && state.data.products[0]) || { name: "", price: 0 };
+  hcItems.push({ name: p.name, qty: 1, rate: p.price || 0 });
+}
+function renderHcItems() {
+  const box = $("hc-items"); if (!box || !state.data) return;
+  box.innerHTML = hcItems.map((it, i) =>
+    '<div class="grid2" style="margin-bottom:.45rem">' +
+    '<div><label class="f">Product</label><select data-hcp="' + i + '">' +
+      state.data.products.map((p) => '<option value="' + escHtml(p.name) + '"' + (p.name === it.name ? " selected" : "") + ">" + escHtml(p.name) + "</option>").join("") + "</select></div>" +
+    '<div style="display:flex; gap:.4rem; align-items:end"><div style="flex:1"><label class="f">Qty</label><input type="number" min="0" step="any" data-hcq="' + i + '" value="' + it.qty + '"></div>' +
+    '<div style="flex:1"><label class="f">Rate (Rs)</label><input type="number" min="0" step="any" data-hcr="' + i + '" value="' + it.rate + '"></div>' +
+    '<button type="button" class="ghost small" data-hcx="' + i + '">✕</button></div></div>').join("");
+  box.querySelectorAll("[data-hcp]").forEach((el) => el.addEventListener("change", () => { const i = +el.getAttribute("data-hcp"); hcItems[i].name = el.value; const pr = state.data.products.find((x) => x.name === el.value); if (pr) hcItems[i].rate = pr.price || 0; renderHcItems(); }));
+  box.querySelectorAll("[data-hcq]").forEach((el) => el.addEventListener("input", () => { hcItems[+el.getAttribute("data-hcq")].qty = el.value; hcCalc(); }));
+  box.querySelectorAll("[data-hcr]").forEach((el) => el.addEventListener("input", () => { hcItems[+el.getAttribute("data-hcr")].rate = el.value; hcCalc(); }));
+  box.querySelectorAll("[data-hcx]").forEach((el) => el.addEventListener("click", () => { hcItems.splice(+el.getAttribute("data-hcx"), 1); if (!hcItems.length) hcAddItem(); renderHcItems(); }));
+  hcCalc();
+}
+function hcCalc() {
+  const sub = hcItems.reduce((a, it) => a + (Number(it.qty) || 0) * (Number(it.rate) || 0), 0);
+  const minus = Math.round(sub * HC_RATE) / 100;
+  const own = $("hc-discount") ? (Number($("hc-discount").value) || 0) : 0;
+  const recv = $("hc-received") ? (Number($("hc-received").value) || 0) : 0;
+  const net = Math.max(0, Math.round((sub - minus - own) * 100) / 100);
+  const bal = Math.max(0, Math.round((net - recv) * 100) / 100);
+  const box = $("hc-totals");
+  if (box) box.innerHTML = "Subtotal: <b>" + fmtRs(sub) + "</b> &nbsp;·&nbsp; Less 14.5%: <b>− " + fmtRs(minus) + "</b>" + (own ? " &nbsp;·&nbsp; My discount: <b>− " + fmtRs(own) + "</b>" : "") + "<br>Net payable: <b>" + fmtRs(net) + "</b> &nbsp;·&nbsp; Received: " + fmtRs(recv) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(bal) + "</b>";
+  return { sub, minus, own, net, recv, bal };
+}
+function hcSave() {
+  if (!state.data) return;
+  const party = $("hc-party").value.trim();
+  const items = hcItems.filter((it) => it.name && (Number(it.qty) || 0) > 0);
+  if (!party) { toast("Party / doctor ka naam likhein"); return; }
+  if (!items.length) { toast("Kam az kam ek product add karein"); return; }
+  const c = hcCalc();
+  const inv = { id: hcUid(), no: "HC-" + (1001 + state.data.handcarry.length), date: $("hc-date").value || todayStr(), party: party,
+    items: items.map((it) => ({ name: it.name, qty: Number(it.qty) || 0, rate: Number(it.rate) || 0 })),
+    subtotal: c.sub, minus145: c.minus, ownDiscount: c.own, net: c.net, received: c.recv, balance: c.bal };
+  state.data.handcarry.unshift(inv);
+  markDirty();
+  hcItems = []; hcAddItem();
+  $("hc-party").value = ""; $("hc-discount").value = 0; $("hc-received").value = 0;
+  renderHandcarry();
+  toast("Invoice saved — " + inv.no);
+}
+function renderHcList() {
+  const box = $("hc-list"); if (!box || !state.data) return;
+  const list = state.data.handcarry || [];
+  if (!list.length) { box.innerHTML = '<p style="color:var(--muted); font-size:.88rem">Abhi koi handcarry invoice nahi.</p>'; return; }
+  box.innerHTML = '<table class="data"><thead><tr><th>No</th><th>Date</th><th>Party</th><th>Net</th><th>Received</th><th>Balance</th><th></th></tr></thead><tbody>' +
+    list.map((v, ix) => `<tr><td>${escHtml(v.no)}</td><td>${escHtml(v.date)}</td><td>${escHtml(v.party)}</td><td>${fmtRs(v.net)}</td><td>${fmtRs(v.received)}</td><td>${fmtRs(v.balance)}</td><td style="white-space:nowrap"><button type="button" class="ghost small" data-hcprint="${ix}">🖨️ Receipt</button> <button type="button" class="ghost small" data-hcwa="${ix}">WhatsApp</button> <button type="button" class="danger small" data-hcdel="${ix}">✕</button></td></tr>`).join("") + "</tbody></table>";
+  box.querySelectorAll("[data-hcprint]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcprint")]; if (v) hcPrint(v.id); }));
+  box.querySelectorAll("[data-hcwa]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcwa")]; if (v) hcWhatsApp(v.id); }));
+  box.querySelectorAll("[data-hcdel]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcdel")]; if (v && confirm("Ye invoice delete kar dein?")) { state.data.handcarry = state.data.handcarry.filter((x) => x.id !== v.id); markDirty(); renderHandcarry(); } }));
+}
+function hcInvoiceHtml(v) {
+  const rows = v.items.map((it) => "<tr><td>" + escHtml(it.name) + "</td><td>" + (Number(it.qty) || 0) + "</td><td>" + fmtRs(it.rate) + "</td><td>" + fmtRs((Number(it.qty) || 0) * (Number(it.rate) || 0)) + "</td></tr>").join("");
+  return "<h2>Handcarry Invoice — " + escHtml(v.no) + "</h2>" +
+    "<p><b>Party:</b> " + escHtml(v.party) + " &nbsp;|&nbsp; <b>Date:</b> " + escHtml(v.date) + " &nbsp;|&nbsp; " + escHtml(state.user ? state.user.email : "") + "</p>" +
+    "<table><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>" + rows + "</table>" +
+    "<p>Subtotal: <b>" + fmtRs(v.subtotal) + "</b><br>Less 14.5%: <b>− " + fmtRs(v.minus145) + "</b>" +
+    (v.ownDiscount ? "<br>My own discount: <b>− " + fmtRs(v.ownDiscount) + "</b>" : "") +
+    "<br>Net payable: <b>" + fmtRs(v.net) + "</b><br>Received: " + fmtRs(v.received) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(v.balance) + "</b></p>";
+}
+function hcPrint(id) { const v = (state.data.handcarry || []).find((x) => x.id === id); if (!v) return; $("screen-receipt-print").innerHTML = hcInvoiceHtml(v); window.print(); }
+function hcWhatsApp(id) {
+  const v = (state.data.handcarry || []).find((x) => x.id === id); if (!v) return;
+  const lines = ["*Handcarry Invoice " + v.no + "*", "Party: " + v.party, "Date: " + v.date, ""];
+  v.items.forEach((it) => lines.push(it.name + " — " + it.qty + " × " + fmtRs(it.rate) + " = " + fmtRs(it.qty * it.rate)));
+  lines.push("", "Subtotal: " + fmtRs(v.subtotal), "Less 14.5%: − " + fmtRs(v.minus145));
+  if (v.ownDiscount) lines.push("My discount: − " + fmtRs(v.ownDiscount));
+  lines.push("Net: " + fmtRs(v.net), "Received: " + fmtRs(v.received), "Balance: " + fmtRs(v.balance));
+  window.open("https://wa.me/?text=" + encodeURIComponent(lines.join("\n")), "_blank");
+}
+/* ---- Compulsion: handcarry invoice se bilkul alag record ---- */
+function cpAdd() {
+  if (!state.data) return;
+  const party = $("cp-party").value.trim(), amount = Number($("cp-amount").value) || 0;
+  if (!party || amount <= 0) { toast("Party aur amount likhein"); return; }
+  state.data.compulsion.unshift({ id: hcUid(), date: $("cp-date").value || todayStr(), party: party, amount: amount, note: $("cp-note").value.trim() });
+  markDirty();
+  $("cp-party").value = ""; $("cp-amount").value = ""; $("cp-note").value = "";
+  renderCpList();
+  toast("Compulsion add ho gaya");
+}
+function renderCpList() {
+  const box = $("cp-list"); if (!box || !state.data) return;
+  const list = state.data.compulsion || [];
+  const m = todayStr().slice(0, 7);
+  const monthTotal = list.filter((c) => (c.date || "").indexOf(m) === 0).reduce((a, c) => a + (Number(c.amount) || 0), 0);
+  const allTotal = list.reduce((a, c) => a + (Number(c.amount) || 0), 0);
+  let html = '<div class="today-box">Is month ka compulsion: <b>' + fmtRs(monthTotal) + "</b> &nbsp;·&nbsp; All time: <b>" + fmtRs(allTotal) + "</b></div>";
+  if (!list.length) { box.innerHTML = html + '<p style="color:var(--muted); font-size:.88rem">Abhi koi entry nahi.</p>'; return; }
+  html += '<table class="data"><thead><tr><th>Date</th><th>Party</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>' +
+    list.map((c) => "<tr><td>" + escHtml(c.date) + "</td><td>" + escHtml(c.party) + "</td><td>" + fmtRs(c.amount) + "</td><td>" + escHtml(c.note || "") + '</td><td><button type="button" class="danger small" data-cpdel="' + c.id + '">✕</button></td></tr>').join("") + "</tbody></table>";
+  box.innerHTML = html;
+  box.querySelectorAll("[data-cpdel]").forEach((b) => b.addEventListener("click", () => { if (confirm("Ye entry delete kar dein?")) { state.data.compulsion = state.data.compulsion.filter((x) => x.id !== b.getAttribute("data-cpdel")); markDirty(); renderCpList(); } }));
 }
 
 /* ---- Auth ---- */
@@ -2518,6 +2672,10 @@ function wireUI() {
     }
   });
   $("btn-add-entry").addEventListener("click", addEntry);
+  if ($("hc-add-item")) $("hc-add-item").addEventListener("click", () => { hcAddItem(); renderHcItems(); });
+  if ($("hc-save")) $("hc-save").addEventListener("click", hcSave);
+  ["hc-discount", "hc-received"].forEach((id) => { const el = $(id); if (el) el.addEventListener("input", hcCalc); });
+  if ($("cp-add")) $("cp-add").addEventListener("click", cpAdd);
   $("btn-add-product").addEventListener("click", addProduct);
   $("btn-add-holiday").addEventListener("click", addHoliday);
   $("btn-save-override").addEventListener("click", saveOverride);
