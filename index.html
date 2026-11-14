@@ -525,7 +525,7 @@ details{background:var(--glass); border-color:var(--glass-border);}
         </div>
         <div id="hc-totals" class="today-box"></div>
         <button type="button" id="hc-save">💾 Save Invoice</button>
-        <p style="font-size:.85rem; color:var(--muted)">14.5% invoice se khud minus ho jata hai aur alag line mein nazar aata hai.</p>
+        <p style="font-size:.85rem; color:var(--muted)">Discount % mein dein — amount khud hisaab ho jayegi.</p>
       </div>
       <div class="card">
         <h2>📋 Handcarry Invoices</h2>
@@ -957,7 +957,6 @@ function switchTab(tabId) {
 
 
 /* ================= HANDCARRY INVOICES + COMPULSION ================= */
-const HC_RATE = 14.5;
 let hcItems = [];
 function hcUid() { return "hc" + Date.now().toString(36) + Math.floor(Math.random() * 9999); }
 function renderHandcarry() {
@@ -987,14 +986,14 @@ function renderHcItems() {
 }
 function hcCalc() {
   const sub = hcItems.reduce((a, it) => a + (Number(it.qty) || 0) * (Number(it.rate) || 0), 0);
-  const minus = Math.round(sub * HC_RATE) / 100;
+  const minus = 0;
   const pct = $("hc-discount") ? (Number($("hc-discount").value) || 0) : 0;
-  const own = Math.round((sub - minus) * pct) / 100;
+  const own = Math.round(sub * pct) / 100;
   const recv = $("hc-received") ? (Number($("hc-received").value) || 0) : 0;
   const net = Math.max(0, Math.round((sub - minus - own) * 100) / 100);
   const bal = Math.max(0, Math.round((net - recv) * 100) / 100);
   const box = $("hc-totals");
-  if (box) box.innerHTML = "Subtotal: <b>" + fmtRs(sub) + "</b> &nbsp;·&nbsp; Less 14.5%: <b>− " + fmtRs(minus) + "</b>" + (pct ? " &nbsp;·&nbsp; My discount (" + pct + "%): <b>− " + fmtRs(own) + "</b>" : "") + "<br>Net payable: <b>" + fmtRs(net) + "</b> &nbsp;·&nbsp; Received: " + fmtRs(recv) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(bal) + "</b>";
+  if (box) box.innerHTML = "Subtotal: <b>" + fmtRs(sub) + "</b>" + (pct ? " &nbsp;·&nbsp; My discount (" + pct + "%): <b>− " + fmtRs(own) + "</b>" : "") + "<br>Net payable: <b>" + fmtRs(net) + "</b> &nbsp;·&nbsp; Received: " + fmtRs(recv) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(bal) + "</b>";
   return { sub, minus, pct, own, net, recv, bal };
 }
 function hcSave() {
@@ -1033,7 +1032,7 @@ function hcInvoiceHtml(v) {
   return "<h2>Handcarry Invoice — " + escHtml(v.no) + "</h2>" +
     "<p><b>Party:</b> " + escHtml(v.party) + " &nbsp;|&nbsp; <b>Date:</b> " + escHtml(v.date) + " &nbsp;|&nbsp; " + escHtml(state.user ? state.user.email : "") + "</p>" +
     "<table><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>" + rows + "</table>" +
-    "<p>Subtotal: <b>" + fmtRs(v.subtotal) + "</b><br>Less 14.5%: <b>− " + fmtRs(v.minus145) + "</b>" +
+    "<p>Subtotal: <b>" + fmtRs(v.subtotal) + "</b>" + (v.minus145 ? "<br>Less 14.5%: <b>− " + fmtRs(v.minus145) + "</b>" : "") +
     (v.ownDiscount ? "<br>My own discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : "") + ": <b>− " + fmtRs(v.ownDiscount) + "</b>" : "") +
     "<br>Net payable: <b>" + fmtRs(v.net) + "</b><br>Received: " + fmtRs(v.received) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(v.balance) + "</b></p>";
 }
@@ -1042,7 +1041,8 @@ function hcWhatsApp(id) {
   const v = (state.data.handcarry || []).find((x) => x.id === id); if (!v) return;
   const lines = ["*Handcarry Invoice " + v.no + "*", "Party: " + v.party, "Date: " + v.date, ""];
   v.items.forEach((it) => lines.push(it.name + " — " + it.qty + " × " + fmtRs(it.rate) + " = " + fmtRs(it.qty * it.rate)));
-  lines.push("", "Subtotal: " + fmtRs(v.subtotal), "Less 14.5%: − " + fmtRs(v.minus145));
+  lines.push("", "Subtotal: " + fmtRs(v.subtotal));
+  if (v.minus145) lines.push("Less 14.5%: − " + fmtRs(v.minus145));
   if (v.ownDiscount) lines.push("My discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : "") + ": − " + fmtRs(v.ownDiscount));
   lines.push("Net: " + fmtRs(v.net), "Received: " + fmtRs(v.received), "Balance: " + fmtRs(v.balance));
   window.open("https://wa.me/?text=" + encodeURIComponent(lines.join("\n")), "_blank");
