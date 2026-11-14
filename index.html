@@ -520,7 +520,7 @@ details{background:var(--glass); border-color:var(--glass-border);}
         <div id="hc-items" style="margin-top:.5rem"></div>
         <button type="button" class="ghost small" id="hc-add-item">+ Add product</button>
         <div class="grid2" style="margin-top:.6rem">
-          <div><label class="f" for="hc-discount">My own discount (Rs)</label><input id="hc-discount" type="number" min="0" step="any" value="0"></div>
+          <div><label class="f" for="hc-discount">My own discount (%)</label><input id="hc-discount" type="number" min="0" step="any" value="0"></div>
           <div><label class="f" for="hc-received">Received (Rs)</label><input id="hc-received" type="number" min="0" step="any" value="0"></div>
         </div>
         <div id="hc-totals" class="today-box"></div>
@@ -531,19 +531,7 @@ details{background:var(--glass); border-color:var(--glass-border);}
         <h2>📋 Handcarry Invoices</h2>
         <div id="hc-list"></div>
       </div>
-      <div class="card">
-        <h2>🤝 Compulsion</h2>
-        <p style="font-size:.85rem; color:var(--muted)">Ye handcarry invoice se <b>bilkul alag</b> record hai — jo paise aap ne apne paas se diye, sirf yahan likhein.</p>
-        <div class="grid2">
-          <div><label class="f" for="cp-party">Party / kis ko diya</label><input id="cp-party" type="text"></div>
-          <div><label class="f" for="cp-amount">Amount (Rs)</label><input id="cp-amount" type="number" min="0" step="any"></div>
-          <div><label class="f" for="cp-date">Date</label><input id="cp-date" type="date"></div>
-          <div><label class="f" for="cp-note">Note</label><input id="cp-note" type="text"></div>
-        </div>
-        <button type="button" id="cp-add" style="margin-top:.5rem">+ Add Entry</button>
-        <div id="cp-list" style="margin-top:.6rem"></div>
-      </div>
-    </section>
+</section>
 
 <div id="screen-receipt-print"></div>
 <div id="toast"></div>
@@ -808,7 +796,6 @@ function defaultData(email) {
     products: DEFAULT_PRODUCTS.map(makeProduct),
     salesLog: [],
     handcarry: [],
-    compulsion: [],
     holidays: [],
     workOverride: null,
     history: []
@@ -822,7 +809,6 @@ function ensureDefaults(data) {
   if (!Array.isArray(data.products)) data.products = [];
   if (!Array.isArray(data.salesLog)) data.salesLog = [];
   if (!Array.isArray(data.handcarry)) data.handcarry = [];
-  if (!Array.isArray(data.compulsion)) data.compulsion = [];
   if (!Array.isArray(data.holidays)) data.holidays = [];
   if (!Array.isArray(data.history)) data.history = [];
   if (!Array.isArray(data.teamMembers) || !data.teamMembers.length) {
@@ -977,9 +963,8 @@ function hcUid() { return "hc" + Date.now().toString(36) + Math.floor(Math.rando
 function renderHandcarry() {
   if (!state.data) return;
   if (!$("hc-date").value) $("hc-date").value = todayStr();
-  if (!$("cp-date").value) $("cp-date").value = todayStr();
   if (!hcItems.length) hcAddItem();
-  renderHcItems(); renderHcList(); renderCpList();
+  renderHcItems(); renderHcList();
 }
 function hcAddItem() {
   const p = (state.data && state.data.products && state.data.products[0]) || { name: "", price: 0 };
@@ -1003,13 +988,14 @@ function renderHcItems() {
 function hcCalc() {
   const sub = hcItems.reduce((a, it) => a + (Number(it.qty) || 0) * (Number(it.rate) || 0), 0);
   const minus = Math.round(sub * HC_RATE) / 100;
-  const own = $("hc-discount") ? (Number($("hc-discount").value) || 0) : 0;
+  const pct = $("hc-discount") ? (Number($("hc-discount").value) || 0) : 0;
+  const own = Math.round((sub - minus) * pct) / 100;
   const recv = $("hc-received") ? (Number($("hc-received").value) || 0) : 0;
   const net = Math.max(0, Math.round((sub - minus - own) * 100) / 100);
   const bal = Math.max(0, Math.round((net - recv) * 100) / 100);
   const box = $("hc-totals");
-  if (box) box.innerHTML = "Subtotal: <b>" + fmtRs(sub) + "</b> &nbsp;·&nbsp; Less 14.5%: <b>− " + fmtRs(minus) + "</b>" + (own ? " &nbsp;·&nbsp; My discount: <b>− " + fmtRs(own) + "</b>" : "") + "<br>Net payable: <b>" + fmtRs(net) + "</b> &nbsp;·&nbsp; Received: " + fmtRs(recv) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(bal) + "</b>";
-  return { sub, minus, own, net, recv, bal };
+  if (box) box.innerHTML = "Subtotal: <b>" + fmtRs(sub) + "</b> &nbsp;·&nbsp; Less 14.5%: <b>− " + fmtRs(minus) + "</b>" + (pct ? " &nbsp;·&nbsp; My discount (" + pct + "%): <b>− " + fmtRs(own) + "</b>" : "") + "<br>Net payable: <b>" + fmtRs(net) + "</b> &nbsp;·&nbsp; Received: " + fmtRs(recv) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(bal) + "</b>";
+  return { sub, minus, pct, own, net, recv, bal };
 }
 function hcSave() {
   if (!state.data) return;
@@ -1020,7 +1006,7 @@ function hcSave() {
   const c = hcCalc();
   const inv = { id: hcUid(), no: "HC-" + (1001 + state.data.handcarry.length), date: $("hc-date").value || todayStr(), party: party,
     items: items.map((it) => ({ name: it.name, qty: Number(it.qty) || 0, rate: Number(it.rate) || 0 })),
-    subtotal: c.sub, minus145: c.minus, ownDiscount: c.own, net: c.net, received: c.recv, balance: c.bal };
+    subtotal: c.sub, minus145: c.minus, ownDiscountPct: c.pct, ownDiscount: c.own, net: c.net, received: c.recv, balance: c.bal };
   state.data.handcarry.unshift(inv);
   markDirty();
   hcItems = []; hcAddItem();
@@ -1032,7 +1018,11 @@ function renderHcList() {
   const box = $("hc-list"); if (!box || !state.data) return;
   const list = state.data.handcarry || [];
   if (!list.length) { box.innerHTML = '<p style="color:var(--muted); font-size:.88rem">Abhi koi handcarry invoice nahi.</p>'; return; }
-  box.innerHTML = '<table class="data"><thead><tr><th>No</th><th>Date</th><th>Party</th><th>Net</th><th>Received</th><th>Balance</th><th></th></tr></thead><tbody>' +
+  const cm = todayStr().slice(0, 7);
+  const mDisc = list.filter((v) => (v.date || "").indexOf(cm) === 0).reduce((a, v) => a + (Number(v.ownDiscount) || 0), 0);
+  const aDisc = list.reduce((a, v) => a + (Number(v.ownDiscount) || 0), 0);
+  box.innerHTML = '<div class="today-box">🤝 Apna diya gaya discount — is month: <b>' + fmtRs(mDisc) + "</b> &nbsp;·&nbsp; All time: <b>" + fmtRs(aDisc) + "</b></div>" +
+  '<table class="data"><thead><tr><th>No</th><th>Date</th><th>Party</th><th>Net</th><th>Received</th><th>Balance</th><th></th></tr></thead><tbody>' +
     list.map((v, ix) => `<tr><td>${escHtml(v.no)}</td><td>${escHtml(v.date)}</td><td>${escHtml(v.party)}</td><td>${fmtRs(v.net)}</td><td>${fmtRs(v.received)}</td><td>${fmtRs(v.balance)}</td><td style="white-space:nowrap"><button type="button" class="ghost small" data-hcprint="${ix}">🖨️ Receipt</button> <button type="button" class="ghost small" data-hcwa="${ix}">WhatsApp</button> <button type="button" class="danger small" data-hcdel="${ix}">✕</button></td></tr>`).join("") + "</tbody></table>";
   box.querySelectorAll("[data-hcprint]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcprint")]; if (v) hcPrint(v.id); }));
   box.querySelectorAll("[data-hcwa]").forEach((b) => b.addEventListener("click", () => { const v = list[+b.getAttribute("data-hcwa")]; if (v) hcWhatsApp(v.id); }));
@@ -1044,7 +1034,7 @@ function hcInvoiceHtml(v) {
     "<p><b>Party:</b> " + escHtml(v.party) + " &nbsp;|&nbsp; <b>Date:</b> " + escHtml(v.date) + " &nbsp;|&nbsp; " + escHtml(state.user ? state.user.email : "") + "</p>" +
     "<table><tr><th>Product</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>" + rows + "</table>" +
     "<p>Subtotal: <b>" + fmtRs(v.subtotal) + "</b><br>Less 14.5%: <b>− " + fmtRs(v.minus145) + "</b>" +
-    (v.ownDiscount ? "<br>My own discount: <b>− " + fmtRs(v.ownDiscount) + "</b>" : "") +
+    (v.ownDiscount ? "<br>My own discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : "") + ": <b>− " + fmtRs(v.ownDiscount) + "</b>" : "") +
     "<br>Net payable: <b>" + fmtRs(v.net) + "</b><br>Received: " + fmtRs(v.received) + " &nbsp;·&nbsp; Balance: <b>" + fmtRs(v.balance) + "</b></p>";
 }
 function hcPrint(id) { const v = (state.data.handcarry || []).find((x) => x.id === id); if (!v) return; $("screen-receipt-print").innerHTML = hcInvoiceHtml(v); window.print(); }
@@ -1053,35 +1043,10 @@ function hcWhatsApp(id) {
   const lines = ["*Handcarry Invoice " + v.no + "*", "Party: " + v.party, "Date: " + v.date, ""];
   v.items.forEach((it) => lines.push(it.name + " — " + it.qty + " × " + fmtRs(it.rate) + " = " + fmtRs(it.qty * it.rate)));
   lines.push("", "Subtotal: " + fmtRs(v.subtotal), "Less 14.5%: − " + fmtRs(v.minus145));
-  if (v.ownDiscount) lines.push("My discount: − " + fmtRs(v.ownDiscount));
+  if (v.ownDiscount) lines.push("My discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : "") + ": − " + fmtRs(v.ownDiscount));
   lines.push("Net: " + fmtRs(v.net), "Received: " + fmtRs(v.received), "Balance: " + fmtRs(v.balance));
   window.open("https://wa.me/?text=" + encodeURIComponent(lines.join("\n")), "_blank");
 }
-/* ---- Compulsion: handcarry invoice se bilkul alag record ---- */
-function cpAdd() {
-  if (!state.data) return;
-  const party = $("cp-party").value.trim(), amount = Number($("cp-amount").value) || 0;
-  if (!party || amount <= 0) { toast("Party aur amount likhein"); return; }
-  state.data.compulsion.unshift({ id: hcUid(), date: $("cp-date").value || todayStr(), party: party, amount: amount, note: $("cp-note").value.trim() });
-  markDirty();
-  $("cp-party").value = ""; $("cp-amount").value = ""; $("cp-note").value = "";
-  renderCpList();
-  toast("Compulsion add ho gaya");
-}
-function renderCpList() {
-  const box = $("cp-list"); if (!box || !state.data) return;
-  const list = state.data.compulsion || [];
-  const m = todayStr().slice(0, 7);
-  const monthTotal = list.filter((c) => (c.date || "").indexOf(m) === 0).reduce((a, c) => a + (Number(c.amount) || 0), 0);
-  const allTotal = list.reduce((a, c) => a + (Number(c.amount) || 0), 0);
-  let html = '<div class="today-box">Is month ka compulsion: <b>' + fmtRs(monthTotal) + "</b> &nbsp;·&nbsp; All time: <b>" + fmtRs(allTotal) + "</b></div>";
-  if (!list.length) { box.innerHTML = html + '<p style="color:var(--muted); font-size:.88rem">Abhi koi entry nahi.</p>'; return; }
-  html += '<table class="data"><thead><tr><th>Date</th><th>Party</th><th>Amount</th><th>Note</th><th></th></tr></thead><tbody>' +
-    list.map((c) => "<tr><td>" + escHtml(c.date) + "</td><td>" + escHtml(c.party) + "</td><td>" + fmtRs(c.amount) + "</td><td>" + escHtml(c.note || "") + '</td><td><button type="button" class="danger small" data-cpdel="' + c.id + '">✕</button></td></tr>').join("") + "</tbody></table>";
-  box.innerHTML = html;
-  box.querySelectorAll("[data-cpdel]").forEach((b) => b.addEventListener("click", () => { if (confirm("Ye entry delete kar dein?")) { state.data.compulsion = state.data.compulsion.filter((x) => x.id !== b.getAttribute("data-cpdel")); markDirty(); renderCpList(); } }));
-}
-
 /* ---- Auth ---- */
 async function handleLogin() {
   clearError();
@@ -2675,7 +2640,7 @@ function wireUI() {
   if ($("hc-add-item")) $("hc-add-item").addEventListener("click", () => { hcAddItem(); renderHcItems(); });
   if ($("hc-save")) $("hc-save").addEventListener("click", hcSave);
   ["hc-discount", "hc-received"].forEach((id) => { const el = $(id); if (el) el.addEventListener("input", hcCalc); });
-  if ($("cp-add")) $("cp-add").addEventListener("click", cpAdd);
+
   $("btn-add-product").addEventListener("click", addProduct);
   $("btn-add-holiday").addEventListener("click", addHoliday);
   $("btn-save-override").addEventListener("click", saveOverride);
