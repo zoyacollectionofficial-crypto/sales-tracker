@@ -1054,15 +1054,15 @@ function hcInvoiceHtml(v) {
   const trow = (label, val, style) => `<tr><td style="padding:6px 10px; ${style || ""}">${label}</td><td style="padding:6px 10px; text-align:right; ${style || ""}">${val}</td></tr>`;
   let totals = trow("Subtotal", "<b>" + fmtRs(v.subtotal) + "</b>");
   if (v.minus145) totals += trow("Less 14.5%", "− " + fmtRs(v.minus145));
-  totals += trow("Discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : ""), "− " + fmtRs(v.ownDiscount || 0), "background:#e7f6ec; color:#137333; font-weight:bold");
-  totals += trow("NET PAYABLE", fmtRs(v.net), "background:#0f766e; color:#ffffff; font-weight:bold; font-size:15px");
+  totals += trow("Discount" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : ""), "− " + fmtRs(v.ownDiscount || 0), "background:#fdeee0; color:#c24e00; font-weight:bold");
+  totals += trow("NET PAYABLE", fmtRs(v.net), "background:#f26722; color:#ffffff; font-weight:bold; font-size:15px");
   totals += trow("Received", fmtRs(v.received));
   totals += trow("Balance Due", "<b>" + fmtRs(v.balance) + "</b>", (Number(v.balance) || 0) > 0 ? "color:#b3261e" : "color:#137333");
   const pays = (v.payments && v.payments.length) ? `<div style="margin-top:10px; font-size:12.5px; color:#444"><b>Payments mili:</b><br>` + v.payments.map((pp) => escHtml(pp.date) + " — " + fmtRs(pp.amount)).join("<br>") + "</div>" : "";
-  const discBanner = v.ownDiscount ? `<div style="margin-top:12px; background:#e7f6ec; border:1.5px dashed #137333; color:#0d5c27; border-radius:8px; padding:9px 12px; text-align:center; font-weight:bold">🤝 Is invoice par diya gaya discount: ${fmtRs(v.ownDiscount)}${v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : ""}</div>` : "";
+  const discBanner = v.ownDiscount ? `<div style="margin-top:12px; background:#fdeee0; border:1.5px dashed #f26722; color:#a03e00; border-radius:8px; padding:9px 12px; text-align:center; font-weight:bold">🤝 Is invoice par diya gaya discount: ${fmtRs(v.ownDiscount)}${v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : ""}</div>` : "";
   return `<div style="font-family:Arial, sans-serif; color:#14181a; background:#ffffff; max-width:720px; margin:0 auto; padding:18px; border:1px solid #d7deda; border-radius:10px; -webkit-print-color-adjust:exact; print-color-adjust:exact">
     <div style="text-align:center"><img src="${HN_LOGO}" alt="Highnoon" style="height:54px"></div>
-    <div style="background:#0f766e; color:#ffffff; border-radius:9px; padding:11px 16px; margin-top:8px">
+    <div style="background:#f26722; color:#ffffff; border-radius:9px; padding:11px 16px; margin-top:8px">
       <span style="font-size:19px; font-weight:bold; letter-spacing:.4px">HANDCARRY INVOICE</span>
       <span style="float:right; font-size:16px; font-weight:bold">${escHtml(v.no)}</span>
     </div>
@@ -1072,7 +1072,7 @@ function hcInvoiceHtml(v) {
       <div style="color:#555; font-size:12px; margin-top:2px">${escHtml(state.user ? state.user.email : "")}</div>
     </div>
     <table style="width:100%; border-collapse:collapse; margin-top:6px; font-size:13.5px">
-      <tr><th style="background:#e6f4f1; text-align:left; padding:8px 9px; border-bottom:2px solid #0f766e">Product</th><th style="background:#e6f4f1; padding:8px 9px; border-bottom:2px solid #0f766e">Qty</th><th style="background:#e6f4f1; text-align:right; padding:8px 9px; border-bottom:2px solid #0f766e">Rate</th><th style="background:#e6f4f1; text-align:right; padding:8px 9px; border-bottom:2px solid #0f766e">Amount</th></tr>
+      <tr><th style="background:#fdeee0; text-align:left; padding:8px 9px; border-bottom:2px solid #f26722">Product</th><th style="background:#fdeee0; padding:8px 9px; border-bottom:2px solid #f26722">Qty</th><th style="background:#fdeee0; text-align:right; padding:8px 9px; border-bottom:2px solid #f26722">Rate</th><th style="background:#fdeee0; text-align:right; padding:8px 9px; border-bottom:2px solid #f26722">Amount</th></tr>
       ${rows}
     </table>
     <table style="width:330px; margin-left:auto; margin-top:10px; border-collapse:collapse; font-size:13.5px">${totals}</table>
@@ -1096,7 +1096,7 @@ function hcShareImage(id) {
     const drawRest = (logoImg) => {
     let y = 24;
     if (logoImg) { const lh = 62, lw = logoImg.width * lh / logoImg.height; g.drawImage(logoImg, (W - lw) / 2, y, lw, lh); y += lh + 22; }
-    g.fillStyle = "#0f766e"; g.fillRect(PAD, y - 6, W - PAD * 2, 3);
+    g.fillStyle = "#f26722"; g.fillRect(PAD, y - 6, W - PAD * 2, 3);
     g.fillStyle = "#111111"; g.textAlign = "left"; g.font = "bold 30px Arial";
     g.fillText("HANDCARRY INVOICE", PAD, y + 36);
     g.textAlign = "right"; g.fillText(v.no, W - PAD, y + 36);
@@ -1120,11 +1120,11 @@ function hcShareImage(id) {
       y += LH;
     });
     div(y - 22);
-    const tot = (label, val, bold, color, band) => { if (band) { g.fillStyle = "#e6f4f1"; g.fillRect(PAD, y - 26, W - PAD * 2, LH); } g.font = (bold ? "bold " : "") + "24px Arial"; g.fillStyle = color || "#111111"; g.fillText(label, PAD, y); g.textAlign = "right"; g.fillText(val, W - PAD, y); g.textAlign = "left"; g.fillStyle = "#111111"; y += LH; };
+    const tot = (label, val, bold, color, band) => { if (band) { g.fillStyle = "#fdeee0"; g.fillRect(PAD, y - 26, W - PAD * 2, LH); } g.font = (bold ? "bold " : "") + "24px Arial"; g.fillStyle = color || "#111111"; g.fillText(label, PAD, y); g.textAlign = "right"; g.fillText(val, W - PAD, y); g.textAlign = "left"; g.fillStyle = "#111111"; y += LH; };
     tot("Subtotal", fmtRs(v.subtotal));
     if (v.minus145) tot("Less 14.5%", "- " + fmtRs(v.minus145));
-    tot("DISCOUNT" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : ""), "- " + fmtRs(v.ownDiscount || 0), true, "#137333");
-    tot("NET PAYABLE", fmtRs(v.net), true, "#0f766e", true);
+    tot("DISCOUNT" + (v.ownDiscountPct ? " (" + v.ownDiscountPct + "%)" : ""), "- " + fmtRs(v.ownDiscount || 0), true, "#c24e00");
+    tot("NET PAYABLE", fmtRs(v.net), true, "#c24e00", true);
     tot("Received", fmtRs(v.received));
     tot("Balance Due", fmtRs(v.balance), true, (Number(v.balance) || 0) > 0 ? "#b3261e" : "#137333");
     y += 10;
