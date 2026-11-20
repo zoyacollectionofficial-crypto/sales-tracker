@@ -281,8 +281,16 @@ details{background:var(--glass); border-color:var(--glass-border);}
             </select>
           </div>
         </div>
-        <label class="f" for="sale-qty" data-i18n="qty">Quantity (packs)</label>
-        <input id="sale-qty" type="number" min="1" step="1" value="1">
+        <div class="grid2">
+          <div>
+            <label class="f" for="sale-date" data-i18n="date">Date</label>
+            <input id="sale-date" type="date">
+          </div>
+          <div>
+            <label class="f" for="sale-qty" data-i18n="qty">Quantity (packs)</label>
+            <input id="sale-qty" type="number" min="1" step="1" value="1">
+          </div>
+        </div>
         <div class="row" style="margin-top:.7rem">
           <button id="btn-add-entry" type="button" style="flex:1" data-i18n="add">Add</button>
         </div>
@@ -294,6 +302,11 @@ details{background:var(--glass); border-color:var(--glass-border);}
         <div class="row" style="margin-top:.4rem">
           <button id="btn-whatsapp-report" type="button" style="flex:1" data-i18n="sendWhatsApp">Send on WhatsApp</button>
         </div>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="dayWiseSales">Day-wise Sales</h2>
+        <div id="daywise-body"><span class="muted" data-i18n="noData">No data yet.</span></div>
       </div>
 
       <div class="card">
@@ -587,7 +600,7 @@ en: {
   diagnostics: "Save Diagnostics", runTest: "Run test", coachTips: "Today's Advice",
   askTitle: "Ask a Question", askPh: "e.g. mera incentive kitna hai?", askBtn: "Ask",
   workingSummary: "Working days summary", clearSales: "Clear sales", remove: "Remove",
-  salesLog: "Sales log", overall: "Overall", products: "Products", holidays: "Holidays",
+  salesLog: "Sales log", dayWiseSales: "Day-wise Sales", showAll: "Show all", overall: "Overall", products: "Products", holidays: "Holidays",
   addHoliday: "Add holiday", save: "Save", clear: "Clear", total: "Total", net: "Net",
   projectionNote: "Set targets to see the projection.", noTargets: "No targets set yet.",
   entryDeleted: "Entry deleted.", productAdded: "Product added: ", salesClearedFor: "Sales cleared for ",
@@ -638,7 +651,7 @@ ur: {
   diagnostics: "سیو چیک", runTest: "ٹیسٹ چلائیں", coachTips: "آج کا مشورہ",
   askTitle: "سوال پوچھیں", askPh: "مثلاً: میرا انسینٹیو کتنا ہے؟", askBtn: "پوچھیں",
   workingSummary: "کام کے دنوں کا خلاصہ", clearSales: "فروخت صاف کریں", remove: "ہٹائیں",
-  salesLog: "فروخت کا ریکارڈ", overall: "مجموعی", products: "پروڈکٹس", holidays: "چھٹیاں",
+  salesLog: "فروخت کا ریکارڈ", dayWiseSales: "دن کے حساب سے سیل", showAll: "سب دکھائیں", overall: "مجموعی", products: "پروڈکٹس", holidays: "چھٹیاں",
   addHoliday: "چھٹی شامل کریں", save: "محفوظ کریں", clear: "صاف کریں", total: "کل", net: "خالص",
   projectionNote: "تخمینہ دیکھنے کے لیے ٹارگٹ لگائیں۔", noTargets: "ابھی کوئی ٹارگٹ نہیں لگایا۔",
   entryDeleted: "اندراج حذف ہو گیا۔", productAdded: "پروڈکٹ شامل ہو گیا: ", salesClearedFor: "فروخت صاف کر دی: ",
@@ -1476,15 +1489,31 @@ function renderDashboard() {
   const names = state.data.products.map((p) => p.name);
   if (cur && names.indexOf(cur) >= 0) sel.value = cur;
   else if (sel.options.length) sel.selectedIndex = 0;
+  const sd = $("sale-date");
+  if (sd && !sd.value) sd.value = todayStr(); // default today; a picked past date stays until changed
+  renderDayWise();
   renderLog();
   renderOverall(wi);
   renderProductCards(wi);
 }
+let logFilterDate = null; // when set, the Sales Log shows only this date (from Day-wise Sales)
 function renderLog() {
   const list = $("sales-log-list");
-  const log = (state.data.salesLog || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  let log = (state.data.salesLog || []).slice().sort((a, b) => (a.date < b.date ? 1 : -1));
+  if (logFilterDate) log = log.filter((e) => e.date === logFilterDate);
   if (!log.length) { list.innerHTML = '<span class="muted">No entries yet.</span>'; return; }
   list.innerHTML = "";
+  if (logFilterDate) {
+    const bar = document.createElement("div");
+    bar.className = "row";
+    bar.style.marginBottom = ".4rem";
+    bar.innerHTML = '<b style="flex:1">' + escHtml(logFilterDate) + "</b>";
+    const all = document.createElement("button");
+    all.type = "button"; all.className = "ghost small"; all.textContent = t("showAll");
+    all.addEventListener("click", () => { logFilterDate = null; renderLog(); });
+    bar.appendChild(all);
+    list.appendChild(bar);
+  }
   log.slice(0, 60).forEach((e) => {
     const div = document.createElement("div");
     div.className = "log-item";
@@ -1506,6 +1535,38 @@ function renderLog() {
     more.textContent = "Showing latest 60 of " + log.length + " entries.";
     list.appendChild(more);
   }
+}
+function renderDayWise() {
+  const host = $("daywise-body");
+  if (!host || !state.data) return;
+  const log = state.data.salesLog || [];
+  if (!log.length) { host.innerHTML = '<span class="muted">No entries yet.</span>'; return; }
+  const priceOf = {};
+  state.data.products.forEach((p) => { priceOf[p.name] = Number(p.price) || 0; });
+  const byDate = {};
+  log.forEach((e) => {
+    const d = byDate[e.date] || (byDate[e.date] = { packs: 0, value: 0 });
+    d.packs += e.qty; // returns are negative, so this is the net for the day
+    d.value += e.qty * (priceOf[e.product] || 0);
+  });
+  const dates = Object.keys(byDate).sort().reverse(); // newest first
+  host.innerHTML = "";
+  dates.forEach((date) => {
+    const d = byDate[date];
+    const row = document.createElement("div");
+    row.className = "log-item";
+    row.style.cursor = "pointer";
+    row.innerHTML = '<span style="flex:1">' + escHtml(date) + "</span>" +
+      "<b>" + fmtNum(d.packs) + " packs</b>" +
+      "<b>" + fmtRs(d.value) + "</b>";
+    row.addEventListener("click", () => {
+      logFilterDate = date;
+      renderLog();
+      const el = $("sales-log-list");
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    host.appendChild(row);
+  });
 }
 function barRow(label, pct, cls) {
   return '<div class="muted" style="font-size:.78rem">' + escHtml(label) + ' <b>' + fmtPct(pct) + '</b></div>' +
@@ -1599,12 +1660,13 @@ function addEntry() {
   const p = state.data.products.find((x) => x.name === product);
   if (!p) { showError("Selected product not found."); return; }
   const signed = type === "return" ? -qty : qty;
-  state.data.salesLog.push({ id: uid(), date: todayStr(), product, qty: signed });
+  const entryDate = ($("sale-date") && $("sale-date").value) || todayStr();
+  state.data.salesLog.push({ id: uid(), date: entryDate, product, qty: signed });
   if (signed >= 0) p.tillSale = (Number(p.tillSale) || 0) + signed;
   else p.tillReturn = (Number(p.tillReturn) || 0) + (-signed);
   $("sale-qty").value = 1;
   markDirty(); renderDashboard();
-  toast((type === "return" ? "Return" : "Sale") + " of " + qty + " added for " + product);
+  toast((type === "return" ? "Return" : "Sale") + " of " + qty + " added for " + product + (entryDate !== todayStr() ? " (" + entryDate + ")" : ""));
 }
 function deleteEntry(id) {
   const i = (state.data.salesLog || []).findIndex((e) => e.id === id);
